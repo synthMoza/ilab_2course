@@ -5,19 +5,6 @@
 #include <iostream>
 #include <unordered_map>
 
-//! The template of the class that should be used
-//! with this ARC cache realization. Its consists of the element
-//! of the type to be cached and its id (automatically sets id of each object)
-template<class U, class KeyT = int>
-class cacheData {
-public:
-	U data;
-	KeyT id;
-
-	cacheData(U _data);
-	~cacheData();
-};
-
 //! @brief The main class that performs ARC cache algorithm
 //! @param T - the type of the currently caching data
 //! @param T1  - the LRU list for recent cache entries
@@ -62,18 +49,6 @@ public:
 	~ARCache();
 };
 
-int cur_id = 1;
-
-template<class U, class KeyT>
-inline cacheData<U, KeyT>::cacheData(U _data) :
-		data(_data), id(cur_id++) {
-}
-
-template<class U, class KeyT>
-inline cacheData<U, KeyT>::~cacheData() {
-	// Destroy
-}
-
 template<class T, class KeyT>
 inline ARCache<T, KeyT>::ARCache(size_t cache_size) :
 		c(cache_size), p(0) {
@@ -100,7 +75,8 @@ inline bool ARCache<T, KeyT>::lookup(const T *elem) {
 
 					// If the T1 list is full
 					if (T1.size() == c) {
-						deleteFromT1(&(*T1.end()));
+						ListIt _iterator = --T1.end();
+						deleteFromT1(&(*_iterator));
 					}
 
 					T1.push_front(*elem);
@@ -122,7 +98,7 @@ inline bool ARCache<T, KeyT>::lookup(const T *elem) {
 				}
 			} else {
 				// Found it in B1
-				float _temp = B1.size() / B2.size();
+				float _temp = B2.size() / B1.size();
 				_temp = std::abs(_temp);
 
 				p = std::min(c, p + std::max(1, static_cast<int>(_temp)));
@@ -133,11 +109,12 @@ inline bool ARCache<T, KeyT>::lookup(const T *elem) {
 		} else {
 			// We found the element in T1, should move it to the top of T2
 			if (T2.size() == c) {
-				deleteFromT2(&(*T2.end()));
+				ListIt _iterator = --T2.end();
+				deleteFromT2(&(*_iterator));
 			}
 
 			T2.push_front(*hash_T1[elem->id]);
-			hash_T2[elem->id] = hash_T1[elem->id];
+			hash_T2[elem->id] = T2.begin();
 
 			T1.erase(hash_T1[elem->id]);
 			hash_T1.erase(elem->id);
@@ -174,13 +151,41 @@ inline void ARCache<T, KeyT>::setLists() {
 
 			int _boundary = T2.size() - (c - p);
 			for (int i = 0; i < _boundary; i++) {
-				deleteFromT2(&(*T2.end()));
+				ListIt _iterator = --T2.end();
+
+				deleteFromT2(&(*_iterator));
+			}
+
+			for (int i = 0; i < _boundary; i++) {
+				ListIt _iterator = B1.begin();
+
+				// Add to T1
+				T1.push_front(*_iterator);
+				hash_T1[(*_iterator).id] = T1.begin();
+
+				// Delete from B1
+				hash_B1.erase((*_iterator).id);
+				B1.erase(_iterator);
 			}
 		}
 	} else if (p < T1.size()) {
 		int _boundary = T1.size() - p;
 		for (int i = 0; i < _boundary; i++) {
-			deleteFromT2(&(*T1.end()));
+			ListIt _iterator = --T1.end();
+
+			deleteFromT1(&(*_iterator));
+		}
+
+		for (int i = 0; i < _boundary; i++) {
+			ListIt _iterator = B2.begin();
+
+			// Add to T2
+			T2.push_front(*_iterator);
+			hash_T2[(*_iterator).id] = T2.begin();
+
+			// Delete from B2
+			hash_B2.erase((*_iterator).id);
+			B2.erase(_iterator);
 		}
 	}
 
@@ -191,25 +196,33 @@ template<class T, class KeyT>
 inline void ARCache<T, KeyT>::printLists() {
 	std::cout << "================\n";
 
-	std::cout << "T1:\n";
+	std::cout << "T1: ";
 	for (auto elem : T1) {
-		std::cout << elem.data << "\n";
+		std::cout << elem.data << " ";
 	}
 
-	std::cout << "T2:\n";
+	std::cout << "\n";
+
+	std::cout << "T2: ";
 	for (auto elem : T2) {
-		std::cout << elem.data << "\n";
+		std::cout << elem.data << " ";
 	}
 
-	std::cout << "B1:\n";
+	std::cout << "\n";
+
+	std::cout << "B1: ";
 	for (auto elem : B1) {
-		std::cout << elem.data << "\n";
+		std::cout << elem.data << " ";
 	}
 
-	std::cout << "B2:\n";
+	std::cout << "\n";
+
+	std::cout << "B2: ";
 	for (auto elem : B2) {
-		std::cout << elem.data << "\n";
+		std::cout << elem.data << " ";
 	}
+
+	std::cout << "\n";
 
 	std::cout << "c = " << c << "\n";
 	std::cout << "p = " << p << "\n";
@@ -224,7 +237,9 @@ inline void ARCache<T, KeyT>::deleteFromT1(const T *elem) {
 
 	// If B1 list is full
 	if (B1.size() == c) {
-		deleteFromB1(&(*B1.end()));
+		ListIt _iterator = --B1.end();
+
+		deleteFromB1(&(*_iterator));
 	}
 
 	B1.push_front(*elem);
@@ -240,7 +255,9 @@ inline void ARCache<T, KeyT>::deleteFromT2(const T *elem) {
 
 	// If B2 list is full
 	if (B2.size() == c) {
-		deleteFromB2(&(*B2.end()));
+		ListIt _iterator = --B2.end();
+
+		deleteFromB2(&(*_iterator));
 	}
 
 	B2.push_front(*elem);

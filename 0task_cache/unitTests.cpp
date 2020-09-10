@@ -20,16 +20,16 @@ void unit_test_1(int cache_size, int memory_size, int access_times) {
 	for (int i = 0; i < access_times; i++) {
 		int _index = std::rand() % memory_size + 1;
 
-		std::cout << "Current element is " << memory.data[_index].data << "\n";
-		std::cout << "Current element ID is " << memory.data[_index].id << "\n";
+		//std::cout << "Current element is " << memory.data[_index].data << "\n";
+		//std::cout << "Current element ID is " << memory.data[_index].id << "\n";
 
 		if (arc_cache.lookup(&memory.data[_index]))
 			hit_count++;
 
-		arc_cache.printLists();
+		//arc_cache.printLists();
 	}
 
-	percent = hit_count * 100 / access_times;
+	percent = ((float) hit_count) * 100.f / access_times;
 	std::cout.precision(4);
 	std::cout << "Unit Test 1: hits - " << hit_count
 			<< ", total amount of requests - " << access_times << " (" << std::fixed << percent  <<"%)" << "\n";

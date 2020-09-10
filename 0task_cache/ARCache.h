@@ -63,8 +63,6 @@ inline bool ARCache<T, KeyT>::lookup(const T *elem) {
 	}
 
 	auto hit = hash_T2.find(elem->id);
-	if (hit != hash_T2.end())
-		std::cout << "Current element ID is " << hash_T2[elem->id]->id << "\n";
 
 	// If we didn't find the element in T2
 	if (hit == hash_T2.end()) {
@@ -127,8 +125,10 @@ inline bool ARCache<T, KeyT>::lookup(const T *elem) {
 			T2.push_front(*hash_T1[elem->id]);
 			hash_T2[elem->id] = T2.begin();
 
-			T1.erase(hash_T1[elem->id]);
+			ListIt _iterator = hash_T1[elem->id];
+
 			hash_T1.erase(elem->id);
+			T1.erase(_iterator);
 
 			p--;
 
@@ -137,12 +137,12 @@ inline bool ARCache<T, KeyT>::lookup(const T *elem) {
 		}
 	} else {
 		// We found the element in T2
-		std::cout << hash_T2[elem->id]->id << "\n";
-
 		T *element = &(*hash_T2[elem->id]);
 
 		T2.push_front(*element);
 		T2.erase(hash_T2[elem->id]);
+
+		hash_T2[elem->id] = T2.begin();
 
 		setLists();
 		return true;
@@ -191,8 +191,7 @@ inline void ARCache<T, KeyT>::setLists() {
 				hash_T1[_iterator->id] = T1.begin();
 
 				// Delete from B1
-				B1.erase(_iterator);
-				hash_B1.erase(_iterator->id);
+				deleteFromB1(&(*_iterator));
 			}
 		}
 	} else if (p < T1.size()) {
@@ -224,8 +223,7 @@ inline void ARCache<T, KeyT>::setLists() {
 			hash_T2[_iterator->id] = T2.begin();
 
 			// Delete from B2
-			B2.erase(_iterator);
-			hash_B2.erase(_iterator->id);
+			deleteFromB2(&(*_iterator));
 		}
 	}
 
@@ -276,8 +274,10 @@ inline void ARCache<T, KeyT>::printLists() {
 
 template<class T, class KeyT>
 inline void ARCache<T, KeyT>::deleteFromT1(const T *elem) {
-	T1.erase(hash_T1[elem->id]);
+	ListIt _iterator = hash_T1[elem->id];
+
 	hash_T1.erase(elem->id);
+	T1.erase(_iterator);
 
 	// If B1 list is full
 	if (B1.size() == c) {
@@ -294,8 +294,10 @@ inline void ARCache<T, KeyT>::deleteFromT1(const T *elem) {
 
 template<class T, class KeyT>
 inline void ARCache<T, KeyT>::deleteFromT2(const T *elem) {
-	T2.erase(hash_T2[elem->id]);
+	ListIt _iterator = hash_T2[elem->id];
+
 	hash_T2.erase(elem->id);
+	T2.erase(_iterator);
 
 	// If B2 list is full
 	if (B2.size() == c) {
@@ -312,14 +314,18 @@ inline void ARCache<T, KeyT>::deleteFromT2(const T *elem) {
 
 template<class T, class KeyT>
 inline void ARCache<T, KeyT>::deleteFromB1(const T *elem) {
-	B1.erase(hash_B1[elem->id]);
+	ListIt _iterator = hash_B1[elem->id];
+
 	hash_B1.erase(elem->id);
+	B1.erase(_iterator);
 }
 
 template<class T, class KeyT>
 inline void ARCache<T, KeyT>::deleteFromB2(const T *elem) {
-	B2.erase(hash_B2[elem->id]);
+	ListIt _iterator = hash_B2[elem->id];
+
 	hash_B2.erase(elem->id);
+	B2.erase(_iterator);
 }
 
 template<class T, class KeyT>

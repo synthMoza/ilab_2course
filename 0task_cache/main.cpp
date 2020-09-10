@@ -3,7 +3,7 @@
 #include "unitTests.h"
 
 int main() {
-	unit_test_1(50, 50, 100);
+	unit_test_1(1000, 10000, 100000);
 
 	return 0;
 }

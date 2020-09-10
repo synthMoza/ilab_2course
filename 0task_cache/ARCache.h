@@ -164,6 +164,8 @@ inline void ARCache<T, KeyT>::setLists() {
 			// If there are elements to be thrown away
 
 			int _boundary = p - T1.size();
+			_boundary = std::min(_boundary, (int) B1.size());
+
 			for (int i = 0; i < _boundary; i++) {
 				ListIt _iterator = std::prev(T2.end());
 
@@ -181,8 +183,6 @@ inline void ARCache<T, KeyT>::setLists() {
 				hash_B2[_iterator->id] = B2.begin();
 			}
 
-			_boundary = std::min(_boundary, (int) B1.size());
-
 			for (int i = 0; i < _boundary; i++) {
 				ListIt _iterator = B1.begin();
 
@@ -196,6 +196,8 @@ inline void ARCache<T, KeyT>::setLists() {
 		}
 	} else if (p < T1.size()) {
 		int _boundary = -p + T1.size();
+		_boundary = std::min(_boundary, (int) B2.size());
+
 		for (int i = 0; i < _boundary; i++) {
 			ListIt _iterator = std::prev(T1.end());
 
@@ -212,8 +214,6 @@ inline void ARCache<T, KeyT>::setLists() {
 			B1.push_front(*_iterator);
 			hash_B1[_iterator->id] = B1.begin();
 		}
-
-		_boundary = std::min(_boundary, (int) B2.size());
 
 		for (int i = 0; i < _boundary; i++) {
 			ListIt _iterator = B2.begin();

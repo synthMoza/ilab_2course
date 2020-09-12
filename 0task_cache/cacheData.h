@@ -8,18 +8,11 @@ class cacheData {
 public:
 	U data;
 	KeyT id;
+	KeyT cur_id;
 
-	cacheData(U _data);
 	cacheData();
 	~cacheData();
 };
-
-int cur_id = 1;
-
-template<class U, class KeyT>
-inline cacheData<U, KeyT>::cacheData(U _data) :
-		data(_data), id(cur_id++) {
-}
 
 template<class U, class KeyT>
 inline cacheData<U, KeyT>::cacheData() {

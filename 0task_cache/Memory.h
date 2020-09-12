@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdlib>
 #include <iostream>
 
 const int IDS_AMOUNT = 1000000;

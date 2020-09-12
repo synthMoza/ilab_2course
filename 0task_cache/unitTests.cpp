@@ -1,6 +1,5 @@
 #include "unitTests.h"
 
-#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 
@@ -21,12 +20,16 @@ void unit_test_1(int cache_size, int memory_size, int access_times) {
 
 	// Access cache 'access_times' times
 	for (int i = 0; i < access_times; i++) {
+		bool _res = false;
 		int _index = std::rand() % memory_size + 1;
 
-		if (arc_cache.lookup(&memory.data[_index]))
+		std::cout << "The data is " << memory.data[_index].data << ".\n";
+
+		_res = arc_cache.lookup(&memory.data[_index]);
+		if (_res)
 			hit_count++;
 
-		//arc_cache.printLists();
+		arc_cache.printLists();
 	}
 
 	percent = ((float) hit_count) * 100.f / access_times;
@@ -35,8 +38,6 @@ void unit_test_1(int cache_size, int memory_size, int access_times) {
 			<< std::setprecision(3) << percent << "%)" << "\n";
 }
 
-//! Test with median with given range, times that median changes and how many
-//! times it jumps across this median
 void unit_test_2(int cache_size, int memory_size, int range, int median_changes,
 		int times) {
 	// For output
@@ -79,8 +80,6 @@ void unit_test_2(int cache_size, int memory_size, int range, int median_changes,
 			<< std::setprecision(3) << percent << "%)" << "\n";
 }
 
-//! Test with probability - range is generated
-//! with some probability
 void unit_test_3(int cache_size, int memory_size, int access_times) {
 	// For output
 	int hit_count = 0;

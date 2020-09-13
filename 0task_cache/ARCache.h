@@ -25,8 +25,8 @@ template<class T, class KeyT = int> class ARCache {
 	std::unordered_map<KeyT, ListIt> hash_B1;
 	std::unordered_map<KeyT, ListIt> hash_B2;
 
-	int c;
-	int p;
+	unsigned c;
+	unsigned p;
 
 	//! Change the sizes of all lists according to new value of 'p'
 	//! This function is only called in 'lookup' method
@@ -40,8 +40,8 @@ template<class T, class KeyT = int> class ARCache {
 	void foundNowhere(const T *elem);
 	void foundT1(const T *elem);
 	void foundT2(const T *elem);
-	void foundB1(const T *elem);
-	void foundB2(const T *elem);
+	void foundB1();
+	void foundB2();
 
 	bool isOK();
 public:
@@ -51,8 +51,6 @@ public:
 	void printLists();
 	//! Looks if the given element is in the cache and doing ARC algorithm
 	bool lookup(const T *elem);
-
-	~ARCache();
 };
 
 template<class T, class KeyT>
@@ -72,45 +70,34 @@ inline bool ARCache<T, KeyT>::lookup(const T *elem) {
 
 	auto hit = hash_T2.find(elem->id);
 
-	// If we didn't find the element in T2
-	if (hit == hash_T2.end()) {
-		hit = hash_T1.find(elem->id);
-
-		// If we didn't find the element in T1 either
-		if (hit == hash_T1.end()) {
-			hit = hash_B1.find(elem->id);
-
-			// If we didn't find the element in B1
-			if (hit == hash_B1.end()) {
-				hit = hash_B2.find(elem->id);
-
-				if (hit == hash_B2.end()) {
-					foundNowhere(elem);
-
-					return false;
-				} else {
-					foundB2(elem);
-
-					return false;
-				}
-			} else {
-				foundB1(elem);
-
-				return false;
-			}
-		} else {
-			foundT1(elem);
-
-			return true;
-		}
-	} else {
+	if (hit != hash_T2.end()) {
 		foundT2(elem);
-
 		return true;
 	}
 
-	std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
-	std::cerr << "Reached the end of the function unexpectedly!\n";
+	hit = hash_T1.find(elem->id);
+
+	if (hit != hash_T1.end()) {
+		foundT1(elem);
+		return true;
+	}
+
+	hit = hash_B1.find(elem->id);
+
+	if (hit != hash_B1.end()) {
+		foundB1();
+		return false;
+	}
+
+	hit = hash_B2.find(elem->id);
+
+	if (hit != hash_T1.end()) {
+		foundB2();
+		return false;
+	}
+
+	foundNowhere(elem);
+
 	return false;
 }
 
@@ -237,10 +224,17 @@ template<class T, class KeyT>
 inline void ARCache<T, KeyT>::deleteFromT1(const T *elem) {
 	assert(elem);
 
-	ListIt iterator_ = hash_T1.find(elem->id)->second;
+	auto pair_ = hash_T1.find(elem->id);
+
+	if (pair_ == hash_T1.end()) {
+		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
+		std::cerr << "Can't find the element " << elem << " in T1!\n";
+
+		exit(-1);
+	}
 
 	hash_T1.erase(elem->id);
-	T1.erase(iterator_);
+	T1.erase(pair_->second);
 
 	// If B1 list is full
 	if (B1.size() == c) {
@@ -259,10 +253,17 @@ template<class T, class KeyT>
 inline void ARCache<T, KeyT>::deleteFromT2(const T *elem) {
 	assert(elem);
 
-	ListIt iterator_ = hash_T2.find(elem->id)->second;
+	auto pair_ = hash_T2.find(elem->id);
+
+	if (pair_ == hash_T2.end()) {
+		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
+		std::cerr << "Can't find the element " << elem << " in T2!\n";
+
+		exit(-1);
+	}
 
 	hash_T2.erase(elem->id);
-	T2.erase(iterator_);
+	T2.erase(pair_->second);
 
 	// If B2 list is full
 	if (B2.size() == c) {
@@ -309,6 +310,13 @@ inline bool ARCache<T, KeyT>::isOK() {
 	if (T2.size() > c) {
 		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
 		std::cerr << "The size of T2 is greater than \'c\'\n";
+
+		return false;
+	}
+
+	if (T2.size() + T1.size() > c) {
+		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
+		std::cerr << "The size of T2 + T1 is greater than \'c\'\n";
 
 		return false;
 	}
@@ -363,13 +371,20 @@ inline void ARCache<T, KeyT>::foundT1(const T *elem) {
 	assert(elem);
 
 	// We found the element in T1, should move it to the top of T2
+	auto pair_ = hash_T1.find(elem->id);
+
+	if (pair_ == hash_T1.end()) {
+		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
+		std::cerr << "Can't find the element " << elem << " in T1!\n";
+
+		exit(-1);
+	}
+
 	T2.push_front(*elem);
 	hash_T2[elem->id] = T2.begin();
 
-	ListIt _iterator = hash_T1.find(elem->id)->second;
-
+	T1.erase(pair_->second);
 	hash_T1.erase(elem->id);
-	T1.erase(_iterator);
 
 	p--;
 
@@ -380,41 +395,45 @@ template<class T, class KeyT>
 inline void ARCache<T, KeyT>::foundT2(const T *elem) {
 	assert(elem);
 
-	T2.push_front(*elem);
-	T2.erase(hash_T2.find(elem->id)->second);
+	auto pair_ = hash_T2.find(elem->id);
 
+	if (pair_ == hash_T2.end()) {
+		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
+		std::cerr << "Can't find the element " << elem << " in T2!\n";
+
+		exit(-1);
+	}
+
+	T2.push_front(*elem);
+
+	T2.erase(pair_->second);
 	hash_T2[elem->id] = T2.begin();
 
 	setLists();
 }
 
 template<class T, class KeyT>
-inline void ARCache<T, KeyT>::foundB1(const T *elem) {
-	assert(elem);
-
+inline void ARCache<T, KeyT>::foundB1() {
 	// Found it in B1
-	float _temp = B2.size() / B1.size();
-	_temp = std::abs(_temp);
+	assert(B1.size() != 0);
 
-	p = std::min(c, p + std::max(1, static_cast<int>(_temp)));
+	float temp_ = B2.size() / B1.size();
+	temp_ = std::abs(temp_);
+
+	p = std::min(c, p + std::max(1, static_cast<int>(temp_)));
 
 	setLists();
 }
 
 template<class T, class KeyT>
-inline void ARCache<T, KeyT>::foundB2(const T *elem) {
-	assert(elem);
-
+inline void ARCache<T, KeyT>::foundB2() {
 	// Found it in B2
-	float _temp = B1.size() / B2.size();
-	_temp = std::abs(_temp);
+	assert(B2.size() != 0);
 
-	p = std::max(0, p - std::max(static_cast<int>(_temp), 1));
+	float temp_ = B1.size() / B2.size();
+	temp_ = std::abs(temp_);
+
+	p = std::max(0U, p - std::max(static_cast<int>(temp_), 1));
 
 	setLists();
-}
-
-template<class T, class KeyT>
-inline ARCache<T, KeyT>::~ARCache() {
-	// Destroy
 }

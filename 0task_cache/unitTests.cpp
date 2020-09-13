@@ -28,8 +28,6 @@ void unit_test_1(int cache_size, int memory_size, int access_times) {
 		_res = arc_cache.lookup(&memory.data[_index]);
 		if (_res)
 			hit_count++;
-
-		arc_cache.printLists();
 	}
 
 	percent = ((float) hit_count) * 100.f / access_times;

@@ -25,8 +25,8 @@ template<class T, class KeyT = int> class ARCache {
 	std::unordered_map<KeyT, ListIt> hash_B1;
 	std::unordered_map<KeyT, ListIt> hash_B2;
 
-	unsigned c;
-	unsigned p;
+	int c;
+	int p;
 
 	//! Change the sizes of all lists according to new value of 'p'
 	//! This function is only called in 'lookup' method
@@ -300,6 +300,20 @@ inline void ARCache<T, KeyT>::deleteFromB2(const T *elem) {
 
 template<class T, class KeyT>
 inline bool ARCache<T, KeyT>::isOK() {
+	if (p < 0) {
+		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
+		std::cerr << "p is negative \'c\'\n";
+
+		return false;
+	}
+
+	if (c < 0) {
+		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
+		std::cerr << "c is negative \'c\'\n";
+
+		return false;
+	}
+
 	if (T1.size() > c) {
 		std::cerr << "Error! " << __PRETTY_FUNCTION__ << "\n";
 		std::cerr << "The size of T1 is greater than \'c\'\n";
@@ -433,7 +447,7 @@ inline void ARCache<T, KeyT>::foundB2() {
 	float temp_ = B1.size() / B2.size();
 	temp_ = std::abs(temp_);
 
-	p = std::max(0U, p - std::max(static_cast<int>(temp_), 1));
+	p = std::max(0, p - std::max(static_cast<int>(temp_), 1));
 
 	setLists();
 }

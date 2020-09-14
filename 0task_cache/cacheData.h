@@ -8,7 +8,6 @@ class cacheData {
 public:
 	U data;
 	KeyT id;
-	KeyT cur_id;
 
 	cacheData();
 	~cacheData();

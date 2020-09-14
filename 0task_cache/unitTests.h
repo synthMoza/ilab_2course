@@ -4,6 +4,8 @@
 #include <iostream>
 
 #include "ARCache.h"
+#include "beladyCache.h"
+
 #include "cacheData.h"
 #include "Memory.h"
 
@@ -35,7 +37,8 @@ void unit_test_3(int cache_size, int memory_size, int access_times);
 template<class KeyT>
 void input_test(KeyT type) {
 	// For output
-	int hit_count = 0;
+	int arc_hit_count = 0;
+	int bel_hit_count = 0;
 	float percent = 0;
 
 	int cache_size = 0;
@@ -44,20 +47,35 @@ void input_test(KeyT type) {
 	std::cin >> cache_size;
 	std::cin >> memory_size;
 
-	ARCache<cacheData<int, KeyT>, KeyT> arc_cache(cache_size);
-	Memory<cacheData<int, KeyT>, KeyT> memory(memory_size);
+	ARCache<beladyData<int, KeyT>, KeyT> arc_cache(cache_size);
+	Memory<beladyData<int, KeyT>> memory(memory_size);
 
 	for (int i = 0; i < memory_size; i++) {
 		KeyT key = 0;
 		std::cin >> key;
+
 		memory.data[i].id = key;
 		memory.data[i].data = key;
-		if (arc_cache.lookup(&memory.data[i]))
-			hit_count++;
 	}
 
-	percent = ((float) hit_count) * 100.f / memory_size;
-	std::cout << "Input data test: hits - " << hit_count
+	beladyCache<beladyData<int, KeyT>, KeyT> belady_cache(cache_size, &memory, memory_size);
+	// belady_cache.printMem();
+	for (int i = 0; i < memory_size; i++) {
+		if (arc_cache.lookup(&memory.data[i]))
+			arc_hit_count++;
+		if (belady_cache.lookup(&memory.data[i]))
+			bel_hit_count++;
+		// std::cout << "The element is " << memory.data[i].data << "\n";
+		// belady_cache.printList();
+	}
+
+	percent = ((float) arc_hit_count) * 100.f / memory_size;
+	std::cout << "Input data test:\n";
+	std::cout << "ARC: hits - " << arc_hit_count
 			<< ", total amount of requests - " << memory_size << " ("
 			<< std::setprecision(3) << percent << "%)" << "\n";
+	percent = ((float) bel_hit_count) * 100.f / memory_size;
+	std::cout << "BELADY: hits - " << bel_hit_count
+				<< ", total amount of requests - " << memory_size << " ("
+				<< std::setprecision(3) << percent << "%)" << "\n";
 }

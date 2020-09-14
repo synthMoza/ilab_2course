@@ -2,9 +2,7 @@
 
 #include <iostream>
 
-const int IDS_AMOUNT = 1000000;
-
-template<class T, class KeyT = int>
+template<class T>
 class Memory {
 public:
 	T *data;
@@ -21,14 +19,14 @@ public:
 	~Memory();
 };
 
-template<class T, class KeyT>
-inline Memory<T, KeyT>::Memory(int _size) :
+template<class T>
+inline Memory<T>::Memory(int _size) :
 		size(_size) {
 	data = new T[size];
 }
 
-template<class T, class KeyT>
-inline void Memory<T, KeyT>::fill_rand() {
+template<class T>
+inline void Memory<T>::fill_rand() {
 	int cur_id = 1;
 
 	for (int i = 0; i < size; i++) {
@@ -38,8 +36,8 @@ inline void Memory<T, KeyT>::fill_rand() {
 
 }
 
-template<class T, class KeyT>
-inline void Memory<T, KeyT>::display() {
+template<class T>
+inline void Memory<T>::display() {
 	std::cout << "MEMORY\n";
 	std::cout << "size=" << size << "\n";
 
@@ -50,7 +48,7 @@ inline void Memory<T, KeyT>::display() {
 	}
 }
 
-template<class T, class KeyT>
-inline Memory<T, KeyT>::~Memory() {
+template<class T>
+inline Memory<T>::~Memory() {
 	delete[] data;
 }

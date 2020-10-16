@@ -1,7 +1,10 @@
 #pragma once
 
 #include <iostream>
+#include "assert.h"
 
+template<typename T>
+class OctoTree;
 
 //! Point template structure
 //! with overloaded operator==
@@ -25,16 +28,19 @@ public:
 
 	bool is_zero();
 
-	friend inline bool operator==(const Vector3<T> &rpoint, const Vector3<T> &lpoint);
+	template <typename U>
+	friend inline bool operator==(const Vector3<U> &rpoint, const Vector3<U> &lpoint);
 	inline Vector3<T> operator-(const Vector3<T> &that) const;
+
+	friend class OctoTree<T>;
 };
 
 template<typename T>
-const float Vector3<T>::eps = 1E-09;
+const float Vector3<T>::eps = 1E-07;
 
 template <typename T>
 inline bool operator==(const Vector3<T>& rpoint, const Vector3<T>& lpoint) {
-	if (rpoint.x == lpoint.x && rpoint.y == lpoint.y)
+	if (rpoint.x_ == lpoint.x_ && rpoint.y_ == lpoint.y_ && rpoint.z_ == lpoint.z_)
 		return true;
 	else
 		return false;
@@ -42,9 +48,7 @@ inline bool operator==(const Vector3<T>& rpoint, const Vector3<T>& lpoint) {
 
 template<typename T>
 inline Vector3<T>::Vector3() :
-	x_ (0),
-	y_ (0),
-	z_ (0) {}
+	Vector3(0, 0, 0) {}
 
 template<typename T>
 inline Vector3<T>::Vector3(T x, T y, T z) :

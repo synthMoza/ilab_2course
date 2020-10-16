@@ -4,26 +4,32 @@
 #include <vector>
 
 template<typename T>
+class OctoTree;
+
+template<typename T>
 class Triangle {
 	static const float eps;
 	std::vector<Vector3<T>> points_;
 	static bool are_projections_collided(const Vector3<T> &base,
 			const Triangle<T> &first, const Triangle<T> &second);
 public:
+	int number;
+
 	Triangle(const std::vector<Vector3<T>> &points);
 
 	void print() const;
 	bool is_collided(const Triangle &that) const;
+
+	friend class OctoTree<T>;
 };
 
 template<typename T>
-const float Triangle<T>::eps = 1E-09;
+const float Triangle<T>::eps = 1E-07;
 
 template<typename T>
-inline Triangle<T>::Triangle(const std::vector<Vector3<T> > &points) {
-	// Copy input vector
-	points_ = points;
-}
+inline Triangle<T>::Triangle(const std::vector<Vector3<T> > &points) :
+	points_ (points),
+	number (0) {}
 
 template<typename T>
 inline void Triangle<T>::print() const {
@@ -90,15 +96,52 @@ inline bool Triangle<T>::is_collided(const Triangle &that) const {
 	Vector3<T> n2 = Vector3<T>::cross_product(ssides.at(0), ssides.at(1));
 
 	// Create vectors from cross product of normal and sides
-	for (auto side : fsides) {
+	for (auto side : fsides)
+	{
 		Vector3<T> _temp = Vector3<T>::cross_product(side, n1);
 		n_fsides.push_back(_temp);
 	}
 
-	for (auto side : ssides) {
+	for (auto side : ssides)
+	{
 		Vector3<T> _temp = Vector3<T>::cross_product(side, n1);
 		n_ssides.push_back(_temp);
 	}
+
+	
+	if (!Triangle<T>::are_projections_collided(n1, *this, that))
+	{
+		return false;
+	}
+	
+	for (auto nside : n_fsides) {
+		if (!Triangle<T>::are_projections_collided(nside, *this, that)) {
+			return false;
+		}
+	}
+
+	
+	if (!Triangle<T>::are_projections_collided(n2, *this, that))
+	{
+		return false;
+	}
+	
+	for (auto nside : n_ssides) {
+		if (!Triangle<T>::are_projections_collided(nside, *this, that)) {
+			return false;
+		}
+	}
+
+	for (auto fside : fsides) {
+		for (auto sside : ssides) {
+			Vector3<T> _temp = Vector3<T>::cross_product(fside, sside);
+			if (!Triangle<T>::are_projections_collided(_temp, *this, that))
+				return false;
+		}
+	}
+
+	/*
+	
 
 	// Check each side of the triangles and their normal
 	if (!Triangle<T>::are_projections_collided(n1, *this, that)) {
@@ -152,6 +195,6 @@ inline bool Triangle<T>::is_collided(const Triangle &that) const {
 			}
 		}
 	}
-
+	*/
 	return true;
 }

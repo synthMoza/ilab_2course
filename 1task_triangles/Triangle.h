@@ -3,6 +3,8 @@
 #include "Vector3.h"
 #include <vector>
 
+namespace mfn {
+
 template<typename T>
 class OctoTree;
 
@@ -197,4 +199,6 @@ inline bool Triangle<T>::is_collided(const Triangle &that) const {
 	}
 	*/
 	return true;
+}
+
 }

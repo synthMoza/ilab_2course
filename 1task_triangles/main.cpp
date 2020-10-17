@@ -9,6 +9,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace mfn;
+
 //! Create N triangles by taking point's coordinates
 //! from the input stream
 template<typename T>

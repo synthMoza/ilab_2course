@@ -66,7 +66,7 @@ inline bool Triangle<T>::are_projections_collided(const Vector3<T> &base,
 			smin = _scalar;
 	}
 
-	if (smin - eps > fmax || fmin - eps > smax) {
+	if (smin - fmax > eps || fmin - smax > eps) {
 		// No collision
 		return false;
 	} else {
@@ -104,36 +104,43 @@ inline bool Triangle<T>::is_collided(const Triangle &that) const {
 		n_fsides.push_back(_temp);
 	}
 
+	// Check if the triangle is a point or a line
+	if (!Triangle<T>::are_projections_collided({1, 1, 1}, *this, that))
+	{
+		return false;
+	}
+
 	for (auto side : ssides)
 	{
-		Vector3<T> _temp = Vector3<T>::cross_product(side, n1);
+		Vector3<T> _temp = Vector3<T>::cross_product(side, n2);
 		n_ssides.push_back(_temp);
 	}
 
-	
+	// Normals of the first triangle
 	if (!Triangle<T>::are_projections_collided(n1, *this, that))
 	{
 		return false;
 	}
 	
-	for (auto nside : n_fsides) {
-		if (!Triangle<T>::are_projections_collided(nside, *this, that)) {
-			return false;
-		}
-	}
+	// for (auto nside : n_fsides) {
+	// 	if (!Triangle<T>::are_projections_collided(nside, *this, that)) {
+	// 		return false;
+	// 	}
+	// }
 
-	
+	// Normals of the second triangle
 	if (!Triangle<T>::are_projections_collided(n2, *this, that))
 	{
 		return false;
 	}
 	
-	for (auto nside : n_ssides) {
-		if (!Triangle<T>::are_projections_collided(nside, *this, that)) {
-			return false;
-		}
-	}
+	// for (auto nside : n_ssides) {
+	// 	if (!Triangle<T>::are_projections_collided(nside, *this, that)) {
+	// 		return false;
+	// 	}
+	// }
 
+	// All cross products of their sides
 	for (auto fside : fsides) {
 		for (auto sside : ssides) {
 			Vector3<T> _temp = Vector3<T>::cross_product(fside, sside);

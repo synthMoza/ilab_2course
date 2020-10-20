@@ -431,7 +431,7 @@ namespace mfn
 			k++;
 			if (it1->is_collided(triangle))
 			{
-				std::cout << triangle.number << " " << it1->number << " ";
+				std::cout << it1->number << " " << triangle.number << " ";
 				return 1;
 			}
 		}

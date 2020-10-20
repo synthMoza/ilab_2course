@@ -4,6 +4,7 @@
 #include "Vector3.h"
 #include <list>
 #include <stack>
+#include <queue>
 #include "assert.h"
 
 // first front layer
@@ -51,8 +52,6 @@ namespace mfn
 		OctoNode();
 
 		friend class OctoTree<T>;
-
-		~OctoNode();
 	};
 
 	template <typename T>
@@ -66,18 +65,27 @@ namespace mfn
 		void findLength();
 		int rec_collision(OctoNode<T> *&node, const Triangle<T> &triangle);
 
+		// Methods for generating a tree
+		void setBelong(OctoNode<T> *&node, const Vector3<T> &point, int *belong, int count);
+		void setOrigin(OctoNode<T> *&node, int zone);
+		void setSameBelong(OctoNode<T> *&node, const Triangle<T> &triangle, int *belong);
 	public:
 		OctoTree(const std::list<Triangle<T>> &triangles);
+
+		// Generate a tree from the given head
 		void generateTree(OctoNode<T> *&node);
+
+		// Test collisions of the given tree (its head)
 		void collision(OctoNode<T> *&node);
+		// Get the head of the tree
 		OctoNode<T> *getHead()
 		{
 			return head_;
 		}
+		// Collision amount
 		long k;
 
 		void print(OctoNode<T> *&node);
-		void destroyTree(OctoNode<T> *&node);
 		~OctoTree();
 	};
 
@@ -91,22 +99,24 @@ namespace mfn
 	}
 
 	template <typename T>
-	inline OctoNode<T>::~OctoNode()
-	{
-		for (int i = 0; i < 8; i++)
-		{
-			if (children_[i] != nullptr)
-			{
-				delete children_[i];
-			}
-		}
-	}
-
-	template <typename T>
 	inline OctoTree<T>::~OctoTree()
 	{
-		if (head_ != nullptr)
-			delete head_;
+		OctoNode<T> *node = nullptr;
+		std::queue<OctoNode<T>*> queue;
+		queue.push(head_);
+
+		while (!queue.empty()) {
+			 node = queue.front();
+			 queue.pop();
+			
+			for (int i = 0; i < 8; ++i) {
+				if (node->children_[i] != nullptr) {
+					queue.push(node->children_[i]);
+				}
+			}
+
+			delete node;
+		}
 	}
 
 	template <typename T>
@@ -122,7 +132,175 @@ namespace mfn
 	}
 
 	template <typename T>
-	inline void OctoTree<T>::generateTree(OctoNode<T> *&node)
+	void OctoTree<T>::setOrigin(OctoNode<T> *&node, int zone) {
+		if ((zone == 0) || (zone == 1) || (zone == 5) || (zone == 4))
+			node->children_[zone]->origin_.y_ = node->origin_.y_ + node->children_[zone]->length_;
+		else
+			node->children_[zone]->origin_.y_ = node->origin_.y_ - node->children_[zone]->length_;
+		if ((zone == 0) || (zone == 1) || (zone == 2) || (zone == 3))
+			node->children_[zone]->origin_.x_ = node->origin_.x_ + node->children_[zone]->length_;
+		else
+			node->children_[zone]->origin_.x_ = node->origin_.x_ - node->children_[zone]->length_;
+		if ((zone == 1) || (zone == 2) || (zone == 6) || (zone == 5))
+			node->children_[zone]->origin_.z_ = node->origin_.z_ + node->children_[zone]->length_;
+		else
+			node->children_[zone]->origin_.z_ = node->origin_.z_ - node->children_[zone]->length_;
+	}
+
+	template <typename T>
+	void OctoTree<T>::setSameBelong(OctoNode<T> *&node, const Triangle<T> &triangle, int *belong) {
+		T xmax = triangle.points_[0].x_;
+		T xmin = xmax;
+		T ymin = triangle.points_[0].y_;
+		T ymax = ymin;
+		T zmax = triangle.points_[0].z_;
+		T zmin = zmax;
+
+		// Find the max and min of each coordinate
+		for (auto point : triangle.points_)
+		{
+			if (point.x_ - eps > xmax)
+				xmax = point.x_;
+			if (point.x_ < xmin - eps)
+				xmin = point.x_;
+			if (point.y_ - eps > ymax)
+				ymax = point.y_;
+			if (point.y_ < ymin - eps)
+				ymin = point.y_;
+			if (point.z_ - eps > zmax)
+				zmax = point.z_;
+			if (point.z_ < zmin - eps)
+				zmin = point.z_;
+		}
+
+		if ((xmax - node->origin_.x_) * (node->origin_.x_ - xmin) > -eps)
+		{
+			// Same zone
+			if (xmax > -eps)
+			{
+				belong[4] = 0;
+				belong[5] = 0;
+				belong[6] = 0;
+				belong[7] = 0;
+			}
+			else
+			{
+				belong[0] = 0;
+				belong[1] = 0;
+				belong[2] = 0;
+				belong[3] = 0;
+			}
+		}
+
+		if ((ymax - node->origin_.y_) * (node->origin_.y_ - ymin) > -eps)
+		{
+			// Same zone
+			if (ymax > -eps)
+			{
+				belong[2] = 0;
+				belong[3] = 0;
+				belong[6] = 0;
+				belong[7] = 0;
+			}
+			else
+			{
+				belong[0] = 0;
+				belong[1] = 0;
+				belong[4] = 0;
+				belong[5] = 0;
+			}
+		}
+
+		if ((zmax - node->origin_.z_) * (node->origin_.z_ - zmin) > -eps)
+		{
+			// Same zone
+			if (zmax > -eps)
+			{
+				belong[0] = 0;
+				belong[3] = 0;
+				belong[4] = 0;
+				belong[7] = 0;
+			}
+			else
+			{
+				belong[1] = 0;
+				belong[2] = 0;
+				belong[5] = 0;
+				belong[6] = 0;
+			}
+		}
+	}
+
+	template <typename T>
+	void OctoTree<T>::setBelong(OctoNode<T> *&node, const Vector3<T> &point, int *belong, int count) {
+		if (!isBetween(point.y_, node->origin_.y_, node->origin_.y_ + node->length_, eps))
+		{
+			// Not 1, 2, 5, 6; only 3, 4, 7, 8
+			if (!isBetween(point.x_, node->origin_.x_, node->origin_.x_ + node->length_, eps))
+			{
+				// Not 3, 4; only 7, 8
+				if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
+				{
+					// It's 8
+					belong[count] = 7;
+				}
+				else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
+				{
+					// It's 7
+					belong[count] = 6;
+				}
+			}
+			else if (!isBetween(point.x_, node->origin_.x_ - node->length_, node->origin_.x_, eps))
+			{
+				// Not 7, 8; only 3, 4
+				if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
+				{
+					// It's 4
+					belong[count] = 3;
+				}
+				else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
+				{
+					// It's 3
+					belong[count] = 2;
+				}
+			}
+		}
+		else if (!isBetween(point.y_, node->origin_.y_ - node->length_, node->origin_.y_, eps))
+		{
+			// Not 3, 4, 7, 8; only 1, 2, 5, 6
+			if (!isBetween(point.x_, node->origin_.x_, node->origin_.x_ + node->length_, eps))
+			{
+				// Not 1, 2; only 5, 6
+				if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
+				{
+					// It's 5
+					belong[count] = 4;
+				}
+				else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
+				{
+					// It's 6
+					belong[count] = 5;
+				}
+			}
+			else if ((!isBetween(point.x_, node->origin_.x_ - node->length_, node->origin_.x_, eps)))
+			{
+				// Not 5, 6; only 1, 2
+				if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
+				{
+					// It's 1
+					belong[count] = 0;
+				}
+				else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
+				{
+					// It's 2
+					belong[count] = 1;
+				}
+			}
+		}
+	}
+
+	template <typename T>
+	void OctoTree<T>::generateTree(OctoNode<T> *&node)
 	{
 		assert(node);
 
@@ -148,71 +326,7 @@ namespace mfn
 					isBetween(point.z_, node->origin_.z_ - eps, node->origin_.z_ + eps, 0.f))
 					break;
 
-				if (!isBetween(point.y_, node->origin_.y_, node->origin_.y_ + node->length_, eps))
-				{
-					// Not 1, 2, 5, 6; only 3, 4, 7, 8
-					if (!isBetween(point.x_, node->origin_.x_, node->origin_.x_ + node->length_, eps))
-					{
-						// Not 3, 4; only 7, 8
-						if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
-						{
-							// It's 8
-							belong[count] = 7;
-						}
-						else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
-						{
-							// It's 7
-							belong[count] = 6;
-						}
-					}
-					else if (!isBetween(point.x_, node->origin_.x_ - node->length_, node->origin_.x_, eps))
-					{
-						// Not 7, 8; only 3, 4
-						if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
-						{
-							// It's 4
-							belong[count] = 3;
-						}
-						else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
-						{
-							// It's 3
-							belong[count] = 2;
-						}
-					}
-				}
-				else if (!isBetween(point.y_, node->origin_.y_ - node->length_, node->origin_.y_, eps))
-				{
-					// Not 3, 4, 7, 8; only 1, 2, 5, 6
-					if (!isBetween(point.x_, node->origin_.x_, node->origin_.x_ + node->length_, eps))
-					{
-						// Not 1, 2; only 5, 6
-						if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
-						{
-							// It's 5
-							belong[count] = 4;
-						}
-						else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
-						{
-							// It's 6
-							belong[count] = 5;
-						}
-					}
-					else if ((!isBetween(point.x_, node->origin_.x_ - node->length_, node->origin_.x_, eps)))
-					{
-						// Not 5, 6; only 1, 2
-						if (!isBetween(point.z_, node->origin_.z_, node->origin_.z_ + node->length_, eps))
-						{
-							// It's 1
-							belong[count] = 0;
-						}
-						else if (!isBetween(point.z_, node->origin_.z_ - node->length_, node->origin_.z_, eps))
-						{
-							// It's 2
-							belong[count] = 1;
-						}
-					}
-				}
-
+				setBelong(node, point, belong, count);
 				count++;
 			}
 
@@ -227,18 +341,7 @@ namespace mfn
 					node->children_[zone] = new OctoNode<T>;
 					// Set its origin and length
 					node->children_[zone]->length_ = node->length_ * 0.5;
-					if ((zone == 0) || (zone == 1) || (zone == 5) || (zone == 4))
-						node->children_[zone]->origin_.y_ = node->origin_.y_ + node->children_[zone]->length_;
-					else
-						node->children_[zone]->origin_.y_ = node->origin_.y_ - node->children_[zone]->length_;
-					if ((zone == 0) || (zone == 1) || (zone == 2) || (zone == 3))
-						node->children_[zone]->origin_.x_ = node->origin_.x_ + node->children_[zone]->length_;
-					else
-						node->children_[zone]->origin_.x_ = node->origin_.x_ - node->children_[zone]->length_;
-					if ((zone == 1) || (zone == 2) || (zone == 6) || (zone == 5))
-						node->children_[zone]->origin_.z_ = node->origin_.z_ + node->children_[zone]->length_;
-					else
-						node->children_[zone]->origin_.z_ = node->origin_.z_ - node->children_[zone]->length_;
+					setOrigin(node, zone);
 				}
 
 				// Push this triangle into its data
@@ -253,6 +356,7 @@ namespace mfn
 				belong[i] = -1;
 		}
 
+		// Too little triangles for dividing further
 		if (tr_count == 0 || tr_count == 1 || tr_count == 2)
 			return;
 
@@ -261,86 +365,7 @@ namespace mfn
 		{
 			int belong[8] = {1};
 
-			T xmax = triangle->points_[0].x_;
-			T xmin = xmax;
-			T ymin = triangle->points_[0].y_;
-			T ymax = ymin;
-			T zmax = triangle->points_[0].z_;
-			T zmin = zmax;
-
-			// Find the max and min of each coordinate
-			for (auto point : triangle->points_)
-			{
-				if (point.x_ - eps > xmax)
-					xmax = point.x_;
-				if (point.x_ < xmin - eps)
-					xmin = point.x_;
-				if (point.y_ - eps > ymax)
-					ymax = point.y_;
-				if (point.y_ < ymin - eps)
-					ymin = point.y_;
-				if (point.z_ - eps > zmax)
-					zmax = point.z_;
-				if (point.z_ < zmin - eps)
-					zmin = point.z_;
-			}
-
-			if ((xmax - node->origin_.x_) * (node->origin_.x_ - xmin) > -eps)
-			{
-				// Same zone
-				if (xmax > -eps)
-				{
-					belong[4] = 0;
-					belong[5] = 0;
-					belong[6] = 0;
-					belong[7] = 0;
-				}
-				else
-				{
-					belong[0] = 0;
-					belong[1] = 0;
-					belong[2] = 0;
-					belong[3] = 0;
-				}
-			}
-
-			if ((ymax - node->origin_.y_) * (node->origin_.y_ - ymin) > -eps)
-			{
-				// Same zone
-				if (ymax > -eps)
-				{
-					belong[2] = 0;
-					belong[3] = 0;
-					belong[6] = 0;
-					belong[7] = 0;
-				}
-				else
-				{
-					belong[0] = 0;
-					belong[1] = 0;
-					belong[4] = 0;
-					belong[5] = 0;
-				}
-			}
-
-			if ((zmax - node->origin_.z_) * (node->origin_.z_ - zmin) > -eps)
-			{
-				// Same zone
-				if (zmax > -eps)
-				{
-					belong[0] = 0;
-					belong[3] = 0;
-					belong[4] = 0;
-					belong[7] = 0;
-				}
-				else
-				{
-					belong[1] = 0;
-					belong[2] = 0;
-					belong[5] = 0;
-					belong[6] = 0;
-				}
-			}
+			setSameBelong(node, *triangle, belong);
 
 			// Copy this triangle into all zones he belongs to
 			for (int i = 0; i < 8; i++)
@@ -355,18 +380,7 @@ namespace mfn
 						node->children_[zone] = new OctoNode<T>;
 						// Set its origin and length
 						node->children_[zone]->length_ = node->length_ * 0.5;
-						if ((zone == 0) || (zone == 1) || (zone == 5) || (zone == 4))
-							node->children_[zone]->origin_.y_ = node->origin_.y_ + node->children_[zone]->length_;
-						else
-							node->children_[zone]->origin_.y_ = node->origin_.y_ - node->children_[zone]->length_;
-						if ((zone == 0) || (zone == 1) || (zone == 2) || (zone == 3))
-							node->children_[zone]->origin_.x_ = node->origin_.x_ + node->children_[zone]->length_;
-						else
-							node->children_[zone]->origin_.x_ = node->origin_.x_ - node->children_[zone]->length_;
-						if ((zone == 1) || (zone == 2) || (zone == 6) || (zone == 5))
-							node->children_[zone]->origin_.z_ = node->origin_.z_ + node->children_[zone]->length_;
-						else
-							node->children_[zone]->origin_.z_ = node->origin_.z_ - node->children_[zone]->length_;
+						setOrigin(node, zone);
 					}
 
 					// Push this triangle into its data
@@ -413,7 +427,7 @@ namespace mfn
 	}
 
 	template <typename T>
-	inline int OctoTree<T>::rec_collision(OctoNode<T> *&node, const Triangle<T> &triangle)
+	int OctoTree<T>::rec_collision(OctoNode<T> *&node, const Triangle<T> &triangle)
 	{
 		assert(node);
 
@@ -440,7 +454,7 @@ namespace mfn
 	}
 
 	template <typename T>
-	inline void OctoTree<T>::collision(OctoNode<T> *&node)
+	void OctoTree<T>::collision(OctoNode<T> *&node)
 	{
 		assert(node);
 

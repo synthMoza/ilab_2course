@@ -125,7 +125,6 @@ TEST(DETERMINANT, TEST_4) {
             fscanf(file, "%f", &(matrix[i][j]));
         }
 
-    matrix.print();
     result = matrix.determinant();
     fclose(file);
     fclose(ans);

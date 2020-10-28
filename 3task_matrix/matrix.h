@@ -10,7 +10,7 @@ enum MATRIX_EXCEPTIONS {
 namespace mofn
 {
     template <typename T>
-    class Matrix
+    class Matrix final
     {
         // The size of the matrix
         int nrows_;

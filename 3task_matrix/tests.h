@@ -132,12 +132,115 @@ TEST(DETERMINANT, TEST_4) {
     EXPECT_FLOAT_EQ(result, answer);
 }
 
+TEST(DETERMINANT, TEST_5) {
+    FILE *file = fopen("Tests/matrix_test5.txt", "r");
+    FILE *ans = fopen("Tests/matrix_ans5.txt", "r");
+
+    if (file == NULL || ans == NULL)
+    {
+        FAIL();
+    }
+
+    int n = 0;
+
+    int answer = 0;
+    int result = 0;
+
+    fscanf(file, "%d", &n);
+    fscanf(ans, "%d", &answer);
+
+    Matrix<float> matrix{n, n, 0};
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+        {
+            fscanf(file, "%f", &(matrix[i][j]));
+        }
+
+    result = matrix.determinant();
+    fclose(file);
+    fclose(ans);
+
+    EXPECT_FLOAT_EQ(result, answer);
+}
+
+TEST(DETERMINANT, TEST_6) {
+    FILE *file = fopen("Tests/matrix_test6.txt", "r");
+    FILE *ans = fopen("Tests/matrix_ans6.txt", "r");
+
+    if (file == NULL || ans == NULL)
+    {
+        FAIL();
+    }
+
+    int n = 0;
+
+    int answer = 0;
+    int result = 0;
+
+    fscanf(file, "%d", &n);
+    fscanf(ans, "%d", &answer);
+
+    Matrix<float> matrix{n, n, 0};
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+        {
+            fscanf(file, "%f", &(matrix[i][j]));
+        }
+
+    result = matrix.determinant();
+    fclose(file);
+    fclose(ans);
+
+    EXPECT_FLOAT_EQ(result, answer);
+}
+
+TEST(DETERMINANT, TEST_7) {
+    FILE *file = fopen("Tests/matrix_test7.txt", "r");
+    FILE *ans = fopen("Tests/matrix_ans7.txt", "r");
+
+    if (file == NULL || ans == NULL)
+    {
+        FAIL();
+    }
+
+    int n = 0;
+
+    int answer = 0;
+    int result = 0;
+
+    fscanf(file, "%d", &n);
+    fscanf(ans, "%d", &answer);
+
+    Matrix<float> matrix{n, n, 0};
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+        {
+            fscanf(file, "%f", &(matrix[i][j]));
+        }
+
+    result = matrix.determinant();
+    fclose(file);
+    fclose(ans);
+
+    EXPECT_FLOAT_EQ(result, answer);
+}
+
+TEST(DETERMINANT, TEST_8) {
+    Matrix<int> matrix = Matrix<int>::eye(1000);
+    int result = matrix.determinant();
+
+    EXPECT_EQ(result, 1);
+}
+
 TEST(CHAINED_OPS, PLUS_1) {
     Matrix<int> A = {3, 3, 5};
     Matrix<int> B = {3, 3, 8};
     Matrix<int> ans = {3, 3, 13};
 
-    EXPECT_NO_THROW({ A += B; });
+    A += B;
 
     EXPECT_EQ(A, ans);
 }
@@ -147,7 +250,7 @@ TEST(CHAINED_OPS, PLUS_2)
     Matrix<int> A = {3, 6, 1};
     Matrix<int> B = {9, 2, 7};
 
-    EXPECT_THROW( { A += B; }, MATRIX_EXCEPTIONS);
+    EXPECT_DEATH( { A += B; }, "");
 }
 
 TEST(CHAINED_OPS, MINUS_1)
@@ -156,7 +259,7 @@ TEST(CHAINED_OPS, MINUS_1)
     Matrix<int> B = {2, 2, 5};
     Matrix<int> ans = {2, 2, -2};
 
-    EXPECT_NO_THROW({A -= B; });
+    A -= B;
 
     EXPECT_EQ(A, ans);
 }
@@ -166,7 +269,7 @@ TEST(CHAINED_OPS, MINUS_2)
     Matrix<int> A = {3, 6, 1};
     Matrix<int> B = {9, 2, 7};
 
-    EXPECT_THROW({ A -= B; }, MATRIX_EXCEPTIONS);
+    EXPECT_DEATH({ A -= B; }, "");
 }
 
 TEST(CHAINED_OPS, MULTIPLY_1) {
@@ -174,7 +277,7 @@ TEST(CHAINED_OPS, MULTIPLY_1) {
     int n = 3;
     Matrix<int> ans = {2, 5, 2 * n};
 
-    EXPECT_NO_THROW({ A *= n;});
+    A *= n;
 
     EXPECT_EQ(A, ans);
 }
@@ -196,7 +299,7 @@ TEST(CHAINED_OPS, MULTIPLY_2) {
     ans[1][0] = 4;
     ans[1][1] = 2;
 
-    EXPECT_NO_THROW({A *= B; });
+    A *= B;
 
     EXPECT_EQ(A, ans);
 }
@@ -205,14 +308,14 @@ TEST(CHAINED_OPS, MULTIPLY_3) {
     Matrix<int> A{3, 2, 0};
     Matrix<int> B{5, 4, 0};
 
-    EXPECT_THROW({A *= B;}, MATRIX_EXCEPTIONS);
+    EXPECT_DEATH({A *= B;}, "");
 }
 
 TEST(ORDINARY_OPS, PLUS_1) {
     Matrix<int> A = {3, 3, 5};
     Matrix<int> B = {3, 3, 8};
     Matrix<int> C{3, 3, 0};
-    EXPECT_NO_THROW({ C = A + B; });
+    C = A + B;
 
     Matrix<int> ans = {3, 3, 13};
 
@@ -223,7 +326,7 @@ TEST(ORDINARY_OPS, PLUS_2) {
     Matrix<int> A = {1, 7, 2};
     Matrix<int> B = {2, 9, 9};
     Matrix<int> C{3, 3, 0};
-    EXPECT_THROW({ C = A + B; }, MATRIX_EXCEPTIONS);
+    EXPECT_DEATH({ C = A + B; }, "");
 }
 
 TEST(ORDINARY_OPS, MINUS_1) {
@@ -241,7 +344,7 @@ TEST(ORDINARY_OPS, MINUS_2) {
     Matrix<int> A = {1, 7, 2};
     Matrix<int> B = {2, 9, 9};
     Matrix<int> C{3, 3, 0};
-    EXPECT_THROW({ C = A - B; }, MATRIX_EXCEPTIONS);
+    EXPECT_DEATH({ C = A - B; }, "");
 }
 
 TEST(ORDINARY_OPS, MULTIPLY_1) {
@@ -250,7 +353,7 @@ TEST(ORDINARY_OPS, MULTIPLY_1) {
     int n = 3;
     Matrix<int> ans = {2, 5, 2 * n};
 
-    EXPECT_NO_THROW({ C = A * n; });
+    C = A * n;
 
     EXPECT_EQ(C, ans);
 }
@@ -273,7 +376,7 @@ TEST(ORDINARY_OPS, MULTIPLY_2) {
     ans[1][0] = 4;
     ans[1][1] = 2;
 
-    EXPECT_NO_THROW({ C = A * B; });
+    C = A * B;
 
     EXPECT_EQ(C, ans);
 }
@@ -283,7 +386,7 @@ TEST(ORDINARY_OPS, MULTIPLY_3) {
     Matrix<int> B{5, 4, 0};
     Matrix<int> C{3, 4, 0};
 
-    EXPECT_THROW({ C = A * B; }, MATRIX_EXCEPTIONS);
+    EXPECT_DEATH({ C = A * B; }, "");
 }
 
 TEST(CHAINED_OPS, POW_1) {
@@ -299,7 +402,7 @@ TEST(CHAINED_OPS, POW_1) {
     ans[1][0] = 15;
     ans[1][1] = -11;
 
-    EXPECT_NO_THROW({ A ^= 2; });
+    A ^= 2;
     EXPECT_EQ(ans, A);
 }
 
@@ -317,7 +420,7 @@ TEST(ORDINARY_OPS, POW_1) {
     ans[1][1] = -11;
 
     Matrix<int> res = {2, 2, 0};
-    EXPECT_NO_THROW({ res = A ^ 2; });
+    res = A ^ 2;
     EXPECT_EQ(ans, res);
 }
 
@@ -335,7 +438,7 @@ TEST(ORDINARY_OPS, POW_2) {
     ans[1][1] = -14;
 
     Matrix<int> res = {2, 2, 0};
-    EXPECT_NO_THROW({ res = A ^ 4; });
+    res = A ^ 4;
     EXPECT_EQ(ans, res);
 }
 

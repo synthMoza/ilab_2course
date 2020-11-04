@@ -2,10 +2,7 @@
 
 #include <iostream>
 #include <cmath>
-
-enum MATRIX_EXCEPTIONS {
-    POISON, NOT_QUAD, DIF_SIZES, OUT_OF_RANGE, WRONG_AXES
-};
+#include <cassert>
 
 namespace mofn
 {
@@ -54,10 +51,11 @@ namespace mofn
         //! Remove a row/column from the matrix
         Matrix & removeRow(int n) &;
         Matrix & removeColumn(int n) &;
+        //! Swap matrix rows
+        Matrix & swapRows(int i, int j) &;
 
         //! Get the minor M(i, j)
         T getMinor(int i, int j) const;
-
 
         // Chained operators
         Matrix &operator+=(const Matrix &rhs) &;
@@ -75,6 +73,9 @@ namespace mofn
         //! Big three
         Matrix(const Matrix &rhs);
         Matrix &operator=(const Matrix &rhs);
+
+        // Destroy the matrix 
+        void destroy();
         ~Matrix();
     };
 
@@ -118,7 +119,7 @@ namespace mofn
         // If the size of the other matrix is the same, don't reinitilize
         if (nrows_ != rhs.nrows_ || ncolumns_ != rhs.ncolumns_)
         {
-            this->~Matrix();
+            destroy();
 
             nrows_ = rhs.nrows_;
             ncolumns_ = rhs.ncolumns_;
@@ -137,12 +138,16 @@ namespace mofn
     }
 
     template <typename T>
-    Matrix<T>::~Matrix()
-    {
+    void Matrix<T>::destroy() {
         for (int i = 0; i < nrows_; ++i)
             delete[] data_[i];
 
         delete[] data_;
+    }
+
+    template <typename T>
+    Matrix<T>::~Matrix() {
+        destroy();
     }
 
     template <typename T>
@@ -207,10 +212,27 @@ namespace mofn
     template <typename T>
     T Matrix<T>::determinant() const {
         float res = 1.f;
+        int changes = 1;
+        Matrix<T> tmp{*this};
 
-        if (nrows_ != ncolumns_) {
-            throw MATRIX_EXCEPTIONS::NOT_QUAD;
-            return -1;
+        assert(nrows_ == ncolumns_);
+        // Privot starts here
+        // Make diagonale values not zero (if possible)
+        for (int i = 0; i < nrows_; i++) {
+            int value = tmp.data_[i][i];
+
+            if (value != 0)
+                continue;
+
+            for (int j = i + 1; j < nrows_; j++) {
+                if (tmp.data_[j][i] != 0) {
+                    tmp.swapRows(i, j);
+                    changes *= -1;
+                }
+            }
+
+            if (tmp.data_[i][i] == 0)
+                return 0;
         }
 
         float l[nrows_][nrows_];
@@ -223,7 +245,7 @@ namespace mofn
                 if (j < i)
                     l[j][i] = 0;
                 else {
-                    l[j][i] = data_[j][i];
+                    l[j][i] = tmp.data_[j][i];
                     for (k = 0; k < i; k++) {
                         l[j][i] -= (l[j][k] * u[k][i]);
                     }
@@ -235,11 +257,7 @@ namespace mofn
                 else if (j == i)
                     u[i][j] = 1;
                 else {
-                    if (l[i][i] == 0.f) {
-                        return 0;
-                    }
-
-                    u[i][j] = data_[i][j] / l[i][i];
+                    u[i][j] = tmp.data_[i][j] / l[i][i];
                     for (k = 0; k < i; k++) {
                         u[i][j] -= ((l[i][k] * u[k][j]) / l[i][i]);
                     }
@@ -251,16 +269,14 @@ namespace mofn
             res *= l[i][i];
         }
 
+        res *= changes;
+
         return static_cast<T>(res);
     }
 
     template <typename T>
     Matrix<T>& Matrix<T>::operator+=(const Matrix &rhs) & {
-        if (ncolumns_ != rhs.ncolumns_ || nrows_ != rhs.nrows_) {
-            // Different sizes of matrixes
-            throw MATRIX_EXCEPTIONS::DIF_SIZES;
-            return *this;
-        }
+        assert(ncolumns_ == rhs.ncolumns_ && nrows_ == rhs.nrows_);
 
         for (int i = 0; i < nrows_; ++i) {
             for (int j = 0; j < ncolumns_; ++j) {
@@ -274,12 +290,7 @@ namespace mofn
     template <typename T>
     Matrix<T> &Matrix<T>::operator-=(const Matrix &rhs) &
     {
-        if (ncolumns_ != rhs.ncolumns_ || nrows_ != rhs.nrows_)
-        {
-            // Different sizes of matrixes
-            throw MATRIX_EXCEPTIONS::DIF_SIZES;
-            return *this;
-        }
+        assert(ncolumns_ == rhs.ncolumns_ && nrows_ == rhs.nrows_);
 
         for (int i = 0; i < nrows_; ++i)
         {
@@ -308,10 +319,7 @@ namespace mofn
 
     template <typename T>
     Matrix<T>& Matrix<T>::operator*=(const Matrix &rhs) & {
-        if (ncolumns_ != rhs.nrows_) {
-            throw MATRIX_EXCEPTIONS::DIF_SIZES;
-            return *this;
-        }
+        assert(ncolumns_ == rhs.nrows_);
 
         Matrix<T> res{nrows_, rhs.ncolumns_, 0};
 
@@ -432,10 +440,7 @@ namespace mofn
 
     template <typename T>
     Matrix<T>& Matrix<T>::removeRow(int n) & {
-        if (n >= nrows_ || n < 0) {
-            throw MATRIX_EXCEPTIONS::OUT_OF_RANGE;
-            return *this;
-        }
+        assert(n < nrows_ && n >= 0);
 
         T* tmp_row = nullptr;
 
@@ -453,10 +458,7 @@ namespace mofn
 
     template <typename T>
     Matrix<T> &Matrix<T>::removeColumn(int n) & {
-        if (n >= ncolumns_ || n < 0) {
-            throw MATRIX_EXCEPTIONS::OUT_OF_RANGE;
-            return *this;
-        }
+        assert(n < ncolumns_ && n >= 0);
 
         --ncolumns_;
         T tmp_el;
@@ -532,10 +534,7 @@ namespace mofn
     static Matrix<float> rotation(int n, int i, int j, float angle) {
         Matrix<float> res = Matrix<float>::eye(n);
 
-        if (i == j || i < 0 || j < 0) {
-            throw MATRIX_EXCEPTIONS::WRONG_AXES;
-            return res;
-        }
+        assert(i != j && i >= 0 && j >= 0);
 
         // Ensure that i < j
         if (i > j) {
@@ -550,5 +549,12 @@ namespace mofn
         res[j][j] = std::cos(angle);
 
         return res;
+    }
+
+    template <typename T>
+    Matrix<T>& Matrix<T>::swapRows(int i, int j) & {
+        T* tmp_row = data_[i];
+        data_[i] = data_[j];
+        data_[j] = tmp_row;
     }
 }

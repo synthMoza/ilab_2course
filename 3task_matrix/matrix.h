@@ -6,6 +6,7 @@
 
 namespace mofn
 {
+    // This matrix is fully usable for int/float, but not for any other classes
     template <typename T>
     class Matrix final
     {
@@ -21,7 +22,6 @@ namespace mofn
             const T &operator[](int n) const { return row[n]; }
             T &operator[](int n) { return row[n]; }
         };
-
     public:
         //! Constructor of the 'nrows * ncolumns' matrix filled with the value
         Matrix(int nrows, int ncolumns, T value = T{});
@@ -68,11 +68,15 @@ namespace mofn
         ProxyRow operator[](int n);
         ProxyRow operator[](int n) const;
 
+        //! Get the det(A)
         T determinant() const;
+        //! Row_i = Row_i - j_k * Row_j;
+        Matrix& subRows(int i, int j, T j_k) &;
+        //! Find the maximum value in the given column (return row of this element)
+        int columnMax(int j) const;
 
-        //! Big three
         Matrix(const Matrix &rhs);
-        Matrix &operator=(const Matrix &rhs);
+        Matrix &operator=(const Matrix &rhs);        
 
         // Destroy the matrix 
         void destroy();
@@ -211,67 +215,47 @@ namespace mofn
 
     template <typename T>
     T Matrix<T>::determinant() const {
-        float res = 1.f;
-        int changes = 1;
-        Matrix<T> tmp{*this};
+        assert(ncolumns_ == nrows_);
 
-        assert(nrows_ == ncolumns_);
-        // Privot starts here
-        // Make diagonale values not zero (if possible)
-        for (int i = 0; i < nrows_; i++) {
-            int value = tmp.data_[i][i];
-
-            if (value != 0)
-                continue;
-
-            for (int j = i + 1; j < nrows_; j++) {
-                if (tmp.data_[j][i] != 0) {
-                    tmp.swapRows(i, j);
-                    changes *= -1;
-                }
+        // Gauss elimination
+        Matrix<float> temp{nrows_, ncolumns_};
+        for (int i = 0; i < nrows_; ++i) {
+            for (int j = 0; j < ncolumns_; ++j) {
+                temp[i][j] = data_[i][j];
             }
+        }
 
-            if (tmp.data_[i][i] == 0)
+        int sign = 1;
+        T res = 1;
+        int max = 0;
+        float max_val = 0;
+
+        temp.print();
+        for (int i = 0; i < nrows_ - 1; ++i) {
+            // Find the maximum value in the current column
+            // and put the max to the top (if neccesary)
+            max = columnMax(i);
+            if (max != i) {
+                temp.swapRows(max, i);
+                sign *= -1;
+            }
+            max_val = temp[i][i];
+            std::cout << "MAX: " << max_val << std::endl;
+            if (max_val == 0)
                 return 0;
-        }
 
-        float l[nrows_][nrows_];
-        float u[nrows_][nrows_];
-
-        int i = 0, j = 0, k = 0;
-
-        for (i = 0; i < nrows_; i++) {
-            for (j = 0; j < nrows_; j++) {
-                if (j < i)
-                    l[j][i] = 0;
-                else {
-                    l[j][i] = tmp.data_[j][i];
-                    for (k = 0; k < i; k++) {
-                        l[j][i] -= (l[j][k] * u[k][i]);
-                    }
-                }
+            // Zero all elements under this maximum value
+            for (int j = i + 1; j < nrows_; ++j) {
+                temp.subRows(j, i, temp[j][i] / max_val);
             }
-            for (j = 0; j < nrows_; j++) {
-                if (j < i)
-                    u[i][j] = 0;
-                else if (j == i)
-                    u[i][j] = 1;
-                else {
-                    u[i][j] = tmp.data_[i][j] / l[i][i];
-                    for (k = 0; k < i; k++) {
-                        u[i][j] -= ((l[i][k] * u[k][j]) / l[i][i]);
-                    }
-                }
-            }
+
+
+            res *= temp[i][i];
+            temp.print();
         }
 
-        for (int i = 0; i < nrows_; i++) {
-            res *= l[i][i];
-        }
-
-        res *= changes;
-
-        return static_cast<T>(res);
+        res *= (sign * temp[nrows_ - 1][nrows_ - 1]);
+        return res;
     }
 
     template <typename T>
@@ -476,6 +460,7 @@ namespace mofn
 
     template <typename T>
     T Matrix<T>::getMinor(int i, int j) const {
+        assert(i >= 0 && j >= 0 && i < nrows_ && j < ncolumns_);
         Matrix<T> tmp{*this};
 
         tmp.removeRow(i);
@@ -556,5 +541,29 @@ namespace mofn
         T* tmp_row = data_[i];
         data_[i] = data_[j];
         data_[j] = tmp_row;
+    }
+
+    template <typename T>
+    Matrix<T>& Matrix<T>::subRows(int i, int j, T j_k) & {
+        assert(i >= 0 && j >= 0 && i < nrows_ && j < ncolumns_);
+
+        for (int m = 0; m < ncolumns_; ++m) {
+            data_[i][m] -= j_k * data_[j][m];
+        }
+
+        return *this;
+    }
+
+    template <typename T>
+    int Matrix<T>::columnMax(int j) const {
+        int max = j;
+
+        for (int i = j; i < nrows_; ++i) {
+            if (std::abs(data_[i][j]) > std::abs(data_[max][j])) {
+                max = i;
+            }
+        }
+
+        return max;
     }
 }

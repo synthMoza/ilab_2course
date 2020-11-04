@@ -230,7 +230,7 @@ namespace mofn
         int max = 0;
         float max_val = 0;
 
-        temp.print();
+        //temp.print();
         for (int i = 0; i < nrows_ - 1; ++i) {
             // Find the maximum value in the current column
             // and put the max to the top (if neccesary)
@@ -240,7 +240,7 @@ namespace mofn
                 sign *= -1;
             }
             max_val = temp[i][i];
-            std::cout << "MAX: " << max_val << std::endl;
+            //std::cout << "MAX: " << max_val << std::endl;
             if (max_val == 0)
                 return 0;
 
@@ -251,7 +251,7 @@ namespace mofn
 
 
             res *= temp[i][i];
-            temp.print();
+            //temp.print();
         }
 
         res *= (sign * temp[nrows_ - 1][nrows_ - 1]);

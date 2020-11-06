@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
     std::cin >> n;
 
-    Matrix<float> matrix{n, n, 0.f};
+    Matrix<float> matrix{n, n, 0};
     std::cin >> matrix;
     std::cout << matrix.determinant() << std::endl;
 

@@ -10,6 +10,7 @@ namespace mofn
     template <typename T>
     class Matrix final
     {
+        const double eps = 1E-06;
         // The size of the matrix
         int nrows_;
         int ncolumns_;
@@ -75,7 +76,18 @@ namespace mofn
         //! Find the maximum value in the given column (return row of this element)
         int columnMax(int j) const;
 
-        Matrix(const Matrix &rhs);
+        template <typename U>
+        Matrix(const Matrix<U> &rhs) : 
+            data_(new T *[nrows_]),
+            nrows_(rhs.getRows()), 
+            ncolumns_(rhs.getColumns()) {
+        for (int i = 0; i < nrows_; ++i) {
+            data_[i] = new T[ncolumns_];
+            for (int j = 0; j < ncolumns_; ++j) {
+                data_[i][j] = rhs[i][j];
+            }
+        }
+    }
         Matrix &operator=(const Matrix &rhs);        
 
         // Destroy the matrix 
@@ -94,21 +106,6 @@ namespace mofn
             for (int j = 0; j < ncolumns_; ++j)
             {
                 data_[i][j] = value;
-            }
-        }
-    }
-
-    template <typename T>
-    Matrix<T>::Matrix(const Matrix &rhs) : 
-        data_(new T *[nrows_]),
-        nrows_(rhs.nrows_), 
-        ncolumns_(rhs.ncolumns_) {
-        for (int i = 0; i < nrows_; ++i)
-        {
-            data_[i] = new T[ncolumns_];
-            for (int j = 0; j < ncolumns_; ++j)
-            {
-                data_[i][j] = rhs.data_[i][j];
             }
         }
     }
@@ -218,29 +215,23 @@ namespace mofn
         assert(ncolumns_ == nrows_);
 
         // Gauss elimination
-        Matrix<float> temp{nrows_, ncolumns_};
-        for (int i = 0; i < nrows_; ++i) {
-            for (int j = 0; j < ncolumns_; ++j) {
-                temp[i][j] = data_[i][j];
-            }
-        }
+        Matrix<long double> temp{*this};
 
         int sign = 1;
         T res = 1;
         int max = 0;
-        float max_val = 0;
+        long double max_val = 0;
 
-        //temp.print();
         for (int i = 0; i < nrows_ - 1; ++i) {
             // Find the maximum value in the current column
             // and put the max to the top (if neccesary)
-            max = columnMax(i);
+            max = temp.columnMax(i);
+            max_val = temp[max][i];
             if (max != i) {
                 temp.swapRows(max, i);
                 sign *= -1;
             }
-            max_val = temp[i][i];
-            //std::cout << "MAX: " << max_val << std::endl;
+            
             if (max_val == 0)
                 return 0;
 
@@ -249,9 +240,7 @@ namespace mofn
                 temp.subRows(j, i, temp[j][i] / max_val);
             }
 
-
             res *= temp[i][i];
-            //temp.print();
         }
 
         res *= (sign * temp[nrows_ - 1][nrows_ - 1]);
@@ -548,7 +537,9 @@ namespace mofn
         assert(i >= 0 && j >= 0 && i < nrows_ && j < ncolumns_);
 
         for (int m = 0; m < ncolumns_; ++m) {
-            data_[i][m] -= j_k * data_[j][m];
+            data_[i][m] -= (j_k * data_[j][m]);
+            if (std::abs(data_[i][m]) < eps)
+                data_[i][m] = 0;
         }
 
         return *this;

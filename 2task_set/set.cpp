@@ -1,15 +1,19 @@
 #include "set.h"
-
+#ifdef GTESTS
+#include "tests.h"
+#endif
 // All functiosn declaration
-void stdset(std::vector<int> data, std::vector<std::pair<int, int>> requests);
-void avlset(std::vector<int> data, std::vector<std::pair<int, int>> requests);
+std::vector<int> stdset(std::vector<int> data, std::vector<std::pair<int, int>> requests);
+std::vector<int> avlset(std::vector<int> data, std::vector<std::pair<int, int>> requests);
 
+#ifdef COMPARE
 int main() {
     int n = 0;
     int m = 0;
     int input = 0;
     std::pair<int, int> request;
     std::vector<int> data;
+    std::vector<int> result;
     std::vector<std::pair<int, int>> requests;
 
     // Input set's data
@@ -28,7 +32,13 @@ int main() {
 
     //=================================================
     auto start = std::chrono::system_clock::now();
-    stdset(data, requests);
+
+    result = stdset(data, requests);
+    for (auto elem : result) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
     auto end = std::chrono::system_clock::now();
     //=================================================
     std::chrono::duration<double> elapsed = end - start;
@@ -36,7 +46,13 @@ int main() {
 
     //=================================================
     start = std::chrono::system_clock::now();
-    avlset(data, requests);
+    
+    result = avlset(data, requests);
+    for (auto elem : result) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
     end = std::chrono::system_clock::now();
     //=================================================
 
@@ -45,44 +61,44 @@ int main() {
 
     return EXIT_SUCCESS;
 }
+#endif
+#ifdef AVL
+int main() {
+    int n = 0;
+    int m = 0;
+    int input = 0;
+    std::pair<int, int> request;
+    std::vector<int> data;
+    std::vector<int> result;
+    std::vector<std::pair<int, int>> requests;
 
-void stdset(std::vector<int> data, std::vector<std::pair<int, int>> requests) {
-    std::set<int> set;
-
-    for (auto elem : data)
-        set.insert(elem);
-
-    std::set<int>::iterator it1, it2;
-    int res = 0;
-
-    for (auto request : requests) {
-
-        it1 = set.lower_bound(request.first);
-        it2 = set.lower_bound(request.second);
-        res = std::distance(it1, it2);
-        if (it2 == set.find(request.second) && it2 != set.end())
-            res++;
-
-        std::cout << res << " ";
+    // Input set's data
+    std::cin >> n;
+    for (int i = 0; i < n; ++i) {
+        std::cin >> input;
+        data.push_back(input);
     }
 
-    std::cout << std::endl;
-}
-
-using namespace mfns;
-
-void avlset(std::vector<int> data, std::vector<std::pair<int, int>> requests) {
-    Node* set = nullptr;
-
-    for (auto key : data)
-        set = insert(set, key);
-
-    int res = 0;
-    for (auto request : requests) {
-        res = distance(set, request.first, request.second);
-
-        std::cout << res << " ";
+    // Input requests
+    std::cin >> m;
+    for (int i = 0 ; i < m; ++i) {
+        std::cin >> request.first >> request.second;
+        requests.push_back(request);
     }
 
+    result = avlset(data, requests);
+    for (auto elem : result) {
+        std::cout << elem << " ";
+    }
     std::cout << std::endl;
+
+    return EXIT_SUCCESS;
 }
+#endif
+#ifdef GTESTS
+int main(int argc, char *argv[])
+{
+	::testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
+}
+#endif

@@ -122,6 +122,45 @@ struct Node final {
         }
     }
 
+    // Finds the lowest common ancestor
+    Node* lowestCA(Node* p, Node* q) {
+        if (p == nullptr || q == nullptr)
+            throw std::runtime_error("Unexpected nullptr in " + std::string(__PRETTY_FUNCTION__));
+
+        int n1 = p->key_;
+        int n2 = q->key_;
+        int n = key_;
+
+        if (n1 > n && n2 > n) {
+            return rightChild->lowestCA(p, q);
+        } else if (n1 < n && n2 < n) {
+            return leftChild->lowestCA(p, q);
+        } else 
+            return this;
+    }
+
+    // Range-query (all values in this range), [p;q]
+    int distance(int p, int q) {
+        int res = 0;
+
+        if (key_ >= p && key_ <= q) {
+            // This key is in the interval
+            res++;
+            if (leftChild)
+                res += leftChild->distance(p, q);
+            if (rightChild)
+                res += rightChild->distance(p, q);
+        } else if (key_ < p) {
+            if (rightChild)
+                res += rightChild->distance(p, q);
+        } else {
+            if (leftChild)
+                res += leftChild->distance(p, q);
+        }
+
+        return res;
+    }
+
     ~Node() {
         if (leftChild)
             delete leftChild;
@@ -151,14 +190,57 @@ private:
         height_ = (height1 > height2) ? height1 : height2 + 1;
     }
 
-    friend Node* rightRotate(Node* p);
-    friend Node* leftRotate(Node *q);
-    friend Node* balanceTree(Node* p);
+    // Balances the given tree (AVL)
+    Node* balanceTree() {
+        recalcHeight();
+        
+        if (bFactor() == 2) {
+            if (rightChild->bFactor() < 0)
+                rightChild = rightChild->rightRotate();
+            return leftRotate();
+        }    
+
+        if (bFactor() == -2) {
+            if (leftChild->bFactor() > 0)
+                leftChild = leftChild->leftRotate();
+            return rightRotate();
+        }
+
+        return this;
+    }
+
+    // Simple left rotation of the given node
+    Node* leftRotate() {
+        if (this->rightChild == nullptr)
+            throw std::runtime_error("Unexpected nullptr in " + std::string(__PRETTY_FUNCTION__));
+        
+        Node *p = rightChild;
+        rightChild = p->leftChild;
+        p->leftChild = this;
+
+        recalcHeight();
+        p->recalcHeight();
+
+        return p;
+    }
+    
+    // Simple right rotation of the given node
+    Node* rightRotate() {
+        if (leftChild == nullptr)
+            throw std::runtime_error("Unexpected nullptr in " + std::string(__PRETTY_FUNCTION__));
+
+        Node* q = leftChild;    
+        leftChild = q->rightChild;
+        q->rightChild = this;
+
+        recalcHeight();  
+        q->recalcHeight();
+
+        return q;
+    }
+
+    friend Node* insert(Node* p, int key);
 };
 
-Node* balanceTree(Node* p);
-Node* lowestCA(Node* head, Node* p, Node* q);
 Node* insert(Node* p, int key);
-int distance(Node *head, int p, int q);
-
 }

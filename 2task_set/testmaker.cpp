@@ -36,6 +36,7 @@ void test1(int d, int n, int m) {
     fclose(ans);
 }
 
+// Checks if the element is in the vector
 template <typename T>
 bool in_vector(std::vector<T> vector, T key) {
     for (auto elem : vector) {
@@ -96,13 +97,21 @@ void test2(int n, int m, int max) {
 }
 
 int main() {
-    test1(2, 10, 5);
-    test1(3, 5, 10);
-    test1(5, 20, 10);
+    // test1(2, 10, 5);
+    // test1(3, 5, 10);
+    // test1(5, 20, 10);
 
-    test2(10, 5, 20);
-    test2(20, 40, 100);
-    test2(50, 50, 250);
+    // test2(10, 5, 20);
+    // test2(20, 40, 100);
+    // test2(50, 50, 250);
+
+    test1(192, 200, 5000);
+    test1(57, 500, 10000);
+    test1(37, 1000, 100000);
+
+    test2(100, 5000, INT32_MAX);
+    test2(1000, 10000, INT32_MAX);
+    test2(15000, 100000, INT32_MAX);
 
     return 0;
 }

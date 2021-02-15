@@ -11,7 +11,7 @@ compare: set.o compare.o
 compare.o: compare.cpp
 	$(CXX) -c -o $@ $< -DCOMPARE $(CXXFLAGS)
 
-# Tests to ensure AVL tree works right
+# Tests to ensure algorithms for avlset and stdset work right
 gtests: set.o gcompare.o
 	$(CXX) -o $@ $^ $(GCXXFLAGS)
 gcompare.o: compare.cpp
@@ -27,3 +27,5 @@ testmaker.o: testmaker.cpp
 # Clean garbage
 clean:
 	rm -rf compare gtests testmaker *.o *.d 
+
+-include *.d

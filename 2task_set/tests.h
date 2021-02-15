@@ -30,7 +30,7 @@ TEST(AVLTREE, TEST0) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = avlset(data, requests);
+    result = avlset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -70,7 +70,7 @@ TEST(AVLTREE, TEST1) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = avlset(data, requests);
+    result = avlset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -109,7 +109,7 @@ TEST(AVLTREE, TEST2) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = avlset(data, requests);
+    result = avlset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -148,7 +148,7 @@ TEST(AVLTREE, TEST3) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = avlset(data, requests);
+    result = avlset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -187,7 +187,7 @@ TEST(AVLTREE, TEST4) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = avlset(data, requests);
+    result = avlset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -226,7 +226,7 @@ TEST(AVLTREE, TEST5) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = avlset(data, requests);
+    result = avlset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -265,7 +265,7 @@ TEST(STDSET, TEST0) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = stdset(data, requests);
+    result = stdset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -305,7 +305,7 @@ TEST(STDSET, TEST1) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = stdset(data, requests);
+    result = stdset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -344,7 +344,7 @@ TEST(STDSET, TEST2) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = stdset(data, requests);
+    result = stdset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -383,7 +383,7 @@ TEST(STDSET, TEST3) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = stdset(data, requests);
+    result = stdset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -422,7 +422,7 @@ TEST(STDSET, TEST4) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = stdset(data, requests);
+    result = stdset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);
@@ -461,7 +461,7 @@ TEST(STDSET, TEST5) {
         requests.push_back(std::pair<int, int>(req1,req2));
     }
 
-    result = stdset(data, requests);
+    result = stdset(data.begin(), data.end(), requests.begin(), requests.end());
     for (int i = 0; i < m; ++i) {
         fscanf(ans, "%d", &temp);
         answer.push_back(temp);

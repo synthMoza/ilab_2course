@@ -7,48 +7,26 @@
 #include <vector>
 #include <stack>
 
-std::vector<int> stdset(std::vector<int> data, std::vector<std::pair<int, int>> requests);
-std::vector<int> avlset(std::vector<int> data, std::vector<std::pair<int, int>> requests);
+using ReqIt = std::vector<std::pair<int, int>>::iterator;
+using DataIt = std::vector<int>::iterator;
 
-namespace mfns {
+std::vector<int> avlset(DataIt data_begin, DataIt data_end, ReqIt req_begin, ReqIt req_end);
+std::vector<int> stdset(DataIt data_begin, DataIt data_end, ReqIt req_begin, ReqIt req_end);
 
+// Node realisation for the set based on the AVL tree, protected from user
+namespace {
+template <typename KeyT>
 struct Node final {
-    int key_;
+    KeyT key_;
     int height_;
     Node* leftChild;
     Node* rightChild;
 
-    Node(int key) : key_ (key), height_ (1), 
+    Node(KeyT key) : key_ (key), height_ (1), 
         leftChild(nullptr), rightChild(nullptr) {}
-
-    Node(const Node& that) {
-        key_ = that.key_;
-        height_ = that.height_;
-        if (that.leftChild != nullptr)
-            leftChild = new Node(*(that.leftChild));
-        else
-            leftChild = nullptr;
-        if (that.rightChild != nullptr)
-            rightChild = new Node(*(that.rightChild));
-        else
-            rightChild = nullptr;
-    }
-
-    Node& operator=(const Node& that) {
-        if (this == &that)
-            return *this;
-        key_ = that.key_;
-        height_ = that.height_;
-        if (that.leftChild)
-            leftChild = new Node(*(that.leftChild));
-        else
-            leftChild = nullptr;
-        if (that.rightChild)
-            rightChild = new Node(*(that.rightChild));
-        else
-            rightChild = nullptr;
-    }
-    void print() {
+  
+    // Prints all elements from the given tree (LNR)
+    void print() const {
         if (leftChild)
             leftChild->print();
         std::cout << key_ << " ";
@@ -56,64 +34,52 @@ struct Node final {
             rightChild->print();
     }
 
-    // Find the minimum element that is not less that the given
-    Node* lower_bound(int key) {
+    // Find the minimum element that is not less than the given
+    Node* lower_bound(const KeyT& key) const {
         if (key_ > key) {
             if (leftChild == nullptr)
                 return this;
             return leftChild->lower_bound(key);
         } else if (key_ == key) {
             // Found the element
-            return this;
+            return const_cast<Node*>(this);
         } else {
             // key_ < key
             if (rightChild == nullptr)
-                return this;
+                return nullptr;
             return rightChild->lower_bound(key);
         }
     }
 
-    const Node* lower_bound(int key) const {
+    // Find the minimum element that is greater than the given
+    Node* upper_bound(const KeyT& key) const {
+        Node<KeyT>* tmp = nullptr;
+
         if (key_ > key) {
             if (leftChild == nullptr)
                 return this;
-            return leftChild->lower_bound(key);
-        } else if (key_ == key) {
-            // Found the element
-            return this;
+            tmp = leftChild->upper_bound(key);
+            if (tmp == nullptr)
+                return const_cast<Node*>(this);
+            else
+                return tmp;
         } else {
-            // key_ < key
+            // key_ <= key
             if (rightChild == nullptr)
-                return this;
-            return rightChild->lower_bound(key);
+                return nullptr;
+            return rightChild->upper_bound(key);
         }
     }
     
     // Finds the value in the tree, returns nullptr if there is no such element
-    Node* find(int key) {
+    Node* find(const KeyT& key) const {
         if (key_ > key) {
             if (leftChild == nullptr)
                 return nullptr;
             return leftChild->find(key);
         } else if (key_ == key) {
             // Found the element
-            return this;
-        } else {
-            // key_ < key
-            if (rightChild == nullptr)
-                return nullptr;
-            return rightChild->find(key);
-        }
-    }
-
-    const Node* find(int key) const {
-        if (key_ > key) {
-            if (leftChild == nullptr)
-                return nullptr;
-            return leftChild->find(key);
-        } else if (key_ == key) {
-            // Found the element
-            return this;
+            return const_cast<Node*>(this);
         } else {
             // key_ < key
             if (rightChild == nullptr)
@@ -123,7 +89,7 @@ struct Node final {
     }
 
     // Finds the lowest common ancestor
-    Node* lowestCA(Node* p, Node* q) {
+    Node* lowestCA(const Node* p, const Node* q) const {
         if (p == nullptr || q == nullptr)
             throw std::runtime_error("Unexpected nullptr in " + std::string(__PRETTY_FUNCTION__));
 
@@ -136,11 +102,11 @@ struct Node final {
         } else if (n1 < n && n2 < n) {
             return leftChild->lowestCA(p, q);
         } else 
-            return this;
+            return const_cast<Node*>(this);
     }
 
     // Range-query (all values in this range), [p;q]
-    int distance(int p, int q) {
+    int distance(const KeyT& p, const KeyT& q) const {
         int res = 0;
 
         if (key_ >= p && key_ <= q) {
@@ -161,14 +127,6 @@ struct Node final {
         return res;
     }
 
-    ~Node() {
-        if (leftChild)
-            delete leftChild;
-        if (rightChild)
-            delete rightChild;
-    }
-
-private:
     // Calculates the "balance factor" for this tree
     int bFactor() const {
         int lheight = 0;
@@ -239,8 +197,232 @@ private:
         return q;
     }
 
-    friend Node* insert(Node* p, int key);
+    // Finds minimum element in the given nove
+    Node* findMin() const {
+        return (leftChild == nullptr) ? const_cast<Node*>(this) : leftChild->findMin();
+    }
 };
 
-Node* insert(Node* p, int key);
+// Inserts a new value in the given tree
+// Can't be inside "class Node", as the tree may change (and "this" may be changed)
+template <typename KeyT>
+Node<KeyT>* insert(Node<KeyT>* p, const KeyT& key) {
+    if (p == nullptr)
+        return new Node<KeyT>(key);
+
+    if (key < p->key_)
+        p->leftChild = insert(p->leftChild, key);
+    else
+        p->rightChild = insert(p->rightChild, key);
+
+    return p->balanceTree();
+}
+
+// Removes the minimum element from the given tree
+// Can't be inside "class Node", as the tree may change ("this" may be deleted)
+template <typename KeyT>
+Node<KeyT>* removeMin(Node<KeyT>* p) {
+    if (p->leftChild == nullptr)
+        return p->rightChild;
+    
+    p->leftChild = removeMin(p->leftChild);
+    return p->balanceTree();
+}
+
+template <typename KeyT>
+Node<KeyT>* remove(Node<KeyT>* p, const KeyT& key) {
+    if (p == nullptr)
+        return nullptr;
+    
+    if (key < p->key_)
+        p->leftChild = remove(p->leftChild, key);
+    else if (key > p->key_)
+        p->rightChild = remove(p->rightChild, key);
+    else {
+        Node<KeyT>* q = p->leftChild;
+        Node<KeyT>* r = p->rightChild;
+        delete p;
+        if (r == nullptr)
+            return q;
+        Node<KeyT>* min = r->findMin();
+        min->rightChild = removeMin(r);
+        min->leftChild = q;
+        return min->balanceTree();
+    }
+
+    return p->balanceTree();
+}
+}
+
+namespace mfns {
+template <typename KeyT>
+// Class for using AVL tree for the set
+class avlset final {
+    Node<KeyT>* root_;
+    size_t size_;
+
+    // Removes the whole tree iteratively (using std::stack)
+    void removeSet() {
+        std::stack<Node<KeyT>*> stack;
+        Node<KeyT>* current = root_;
+        Node<KeyT>* temp = nullptr;
+
+        while (current != nullptr || !stack.empty()) {
+            while (current != nullptr) {
+                stack.push(current);
+                current = current->leftChild;
+            }
+
+            current = stack.top();
+            stack.pop();
+
+            // delete this node
+            temp = current->rightChild;
+            delete current;
+            current = temp;
+        }
+    }
+public:
+    // Create empty set
+    avlset() : root_ (nullptr), size_ (0) {}
+    // Create set with the given element
+    avlset(std::initializer_list<KeyT> list) : root_ (nullptr), size_ (list.size())  {
+        try {
+            for (KeyT key : list) {
+                insert(key);
+            }
+        }
+        catch (std::bad_alloc& exception) {
+            // Exception during creating the tree
+            removeSet();
+            throw ;
+        }
+        catch (std::runtime_error& exception) {
+            // Unexpected error during inserting element
+            removeSet();
+            throw ;
+        }
+    }
+    // Copy constructor, safe about exceptions
+    avlset(const avlset<KeyT>& that) {
+        std::stack<Node<KeyT>*> stack;
+        Node<KeyT>* current = that.root_;
+
+        root_ = nullptr;
+        size_ = that.size_;
+
+        try {
+            while (current != nullptr || !stack.empty()) {
+                while (current != nullptr) {
+                    stack.push(current);
+                    current = current->leftChild;
+                }
+
+                current = stack.top();
+                stack.pop();
+
+                insert(current->key_);
+                current = current->rightChild;
+            }
+        }
+        catch (std::bad_alloc& exception) {
+            // Exception  during copying elements
+            removeSet();
+            throw ;
+        }
+        catch (std::runtime_error& exception) {
+            // Unexpected error during inserting element
+            removeSet();
+            throw ;
+        }
+    }
+
+    avlset<KeyT>& operator=(avlset<KeyT>& that) {
+        avlset<KeyT> tmp(that);
+        // Kalb lane
+
+        swap(tmp);
+        return *this;
+    }
+    // Swaps content of two sets
+    void swap(avlset<KeyT>& that) noexcept {
+        std::swap(root_, that.root_);
+        std::swap(size_, that.size_);
+    }
+    // Insert the given key into the tree
+    void insert(const KeyT& key) {
+        if (root_ != nullptr) {
+            // Check if the element is already in the set
+            if (count(key) == 0)
+                root_ = ::insert(root_, key);
+        }
+        else
+            root_ = new Node<KeyT>{key};
+        
+        size_++;
+    }
+    // Prints the elements in the set in the ascending order
+    void print() const {
+        if (root_ != nullptr) {
+            root_->print();
+            std::cout << std::endl;
+        }
+    }
+    // Finds the element of the set
+    Node<KeyT>* find(const KeyT& key) const {
+        return root_->find(key);
+    }
+    // Returns true if the container is empty, else it returns false
+    bool empty() const noexcept {
+        return (root_ == nullptr) ? true : false;
+    }
+    // Returns current size of the set
+    size_t size() const noexcept {
+        return size_;
+    }
+    // Erases the element with the given key from the tree
+    void erase(KeyT key) {
+        if (root_ != nullptr)
+            root_ = remove(root_, key);
+    }
+    // Removes all elements from the set
+    void clear() {
+        removeSet();
+        size_ = 0;
+    }
+    // Counts elements with the given value
+    // Returns 1 if the element is in the set, otherwise returns 0 (all elements are unique)
+    size_t count(const KeyT& key) const {
+        if (root_ != nullptr)
+            if (root_->find(key) != nullptr)
+                return 1;
+        
+        return 0;
+    }
+    // Finds the least element that is not less than the given element
+    Node<KeyT>* lower_bound(const KeyT& key) const {
+        if (root_ != nullptr)
+            return root_->lower_bound(key);
+        else
+            return nullptr;
+    }
+     // Finds the least element that is greater than the given element
+    Node<KeyT>* upper_bound(const KeyT& key) const {
+        if (root_ != nullptr)
+            return root_->upper_bound(key);
+        else
+            return nullptr;
+    }
+    // Returns number of values that are in the given interval [first; second]
+    // Type "KeyT" must be comparable
+    int distance(const KeyT& first, const KeyT& second) {
+        if (root_ != nullptr)
+            return root_->distance(first, second);
+        else
+            throw std::runtime_error("Exception in " + std::string(__PRETTY_FUNCTION__) + ": no elements in the set!" );
+    }
+    ~avlset() {
+        removeSet();
+    }
+};
 }

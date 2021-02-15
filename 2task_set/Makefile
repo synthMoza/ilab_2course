@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -O2 -Wall -MD
 GCXXFLAGS = -DGTESTS -lgtest -pthread
-
+	
 all: compare
 
 # Compare the amount of time needed to comlete the task between

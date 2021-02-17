@@ -285,56 +285,42 @@ class avlset final {
 public:
     // Create empty set
     avlset() : root_ (nullptr), size_ (0) {}
-    // Create set with the given element
+    // Create set with the given element, safe about exceptions
     avlset(std::initializer_list<KeyT> list) : root_ (nullptr), size_ (list.size())  {
-        try {
-            for (KeyT key : list) {
-                insert(key);
-            }
+        avlset tmp;
+
+        tmp.size_ = list.size();
+        for (KeyT key : list) {
+            tmp.insert(key);
         }
-        catch (std::bad_alloc& exception) {
-            // Exception during creating the tree
-            removeSet();
-            throw ;
-        }
-        catch (std::runtime_error& exception) {
-            // Unexpected error during inserting element
-            removeSet();
-            throw ;
-        }
+        // Kalb line
+
+        swap(tmp);
     }
     // Copy constructor, safe about exceptions
     avlset(const avlset<KeyT>& that) {
+        avlset tmp{};
         std::stack<Node<KeyT>*> stack;
         Node<KeyT>* current = that.root_;
 
-        root_ = nullptr;
-        size_ = that.size_;
-
-        try {
-            while (current != nullptr || !stack.empty()) {
-                while (current != nullptr) {
-                    stack.push(current);
-                    current = current->leftChild;
-                }
-
-                current = stack.top();
-                stack.pop();
-
-                insert(current->key_);
-                current = current->rightChild;
+        while (current != nullptr || !stack.empty()) {
+            while (current != nullptr) {
+                stack.push(current);
+                current = current->leftChild;
             }
+
+            current = stack.top();
+            stack.pop();
+
+            tmp.insert(current->key_);
+            current = current->rightChild;
         }
-        catch (std::bad_alloc& exception) {
-            // Exception  during copying elements
-            removeSet();
-            throw ;
-        }
-        catch (std::runtime_error& exception) {
-            // Unexpected error during inserting element
-            removeSet();
-            throw ;
-        }
+        tmp.size_ = that.size_;
+        // Kalb line
+        
+        size_ = 0;
+        root_ = nullptr;
+        swap(tmp);
     }
 
     avlset<KeyT>& operator=(avlset<KeyT>& that) {

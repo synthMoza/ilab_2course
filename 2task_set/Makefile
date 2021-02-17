@@ -24,6 +24,9 @@ testmaker: testmaker.o
 testmaker.o: testmaker.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
+# Debug only
+test: set.o test.o
+	$(CXX) -o $@ $^
 # Clean garbage
 clean:
 	rm -rf compare gtests testmaker *.o *.d 

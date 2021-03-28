@@ -1,11 +1,11 @@
 # iLab 2 course
-All tasks on C++ I have managed to do during iLab on second course of learning in MIPT.
+All tasks I have managed to do during iLab on second course of learning in MIPT. Each task includes C++ code, Makefile and unit tests.
 
-## Cache
+## 0) Cache
 The emulation of ARC cache algorithm, includes Belady algorithm for comparison.
-## Trianlges
+## 1) Trianlges
 Checks whether three-dimensional flat triangles collide each other using octo tree.
-## Set
+## 2) Set
 Implementation of AVL tree for using as set to compare to std::set in a simple task. 
-## Matrix
+## 3) Matrix
 Implementation of Matrix class, specially written for calculation of determinant.

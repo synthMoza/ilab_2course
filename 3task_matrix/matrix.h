@@ -4,12 +4,10 @@
 #include <cmath>
 #include <cassert>
 
-namespace mofn
-{
+namespace mofn {
     // This matrix is fully usable for int/float, but not for any other classes
     template <typename T>
-    class Matrix final
-    {
+    class Matrix final {
         const double eps = 1E-06;
         // The size of the matrix
         int nrows_;
@@ -76,18 +74,35 @@ namespace mofn
         //! Find the maximum value in the given column (return row of this element)
         int columnMax(int j) const;
 
+
+
+        //! Template copy constructor
         template <typename U>
         Matrix(const Matrix<U> &rhs) : 
             data_(new T *[nrows_]),
             nrows_(rhs.getRows()), 
             ncolumns_(rhs.getColumns()) {
-        for (int i = 0; i < nrows_; ++i) {
-            data_[i] = new T[ncolumns_];
-            for (int j = 0; j < ncolumns_; ++j) {
-                data_[i][j] = rhs[i][j];
+            for (int i = 0; i < nrows_; ++i) {
+                data_[i] = new T[ncolumns_];
+                for (int j = 0; j < ncolumns_; ++j) {
+                    data_[i][j] = rhs[i][j];
+                }
             }
         }
-    }
+
+        //! Copy constructor
+        Matrix(const Matrix& rhs) : 
+            data_(new T *[nrows_]),
+            nrows_(rhs.getRows()), 
+            ncolumns_(rhs.getColumns()) {
+            for (int i = 0; i < nrows_; ++i) {
+                data_[i] = new T[ncolumns_];
+                for (int j = 0; j < ncolumns_; ++j) {
+                    data_[i][j] = rhs[i][j];
+                }
+            }
+        }
+
         Matrix &operator=(const Matrix &rhs);        
 
         // Destroy the matrix 
@@ -218,7 +233,7 @@ namespace mofn
         Matrix<long double> temp{*this};
 
         int sign = 1;
-        T res = 1;
+        long double res = 1;
         int max = 0;
         long double max_val = 0;
 
@@ -244,7 +259,7 @@ namespace mofn
         }
 
         res *= (sign * temp[nrows_ - 1][nrows_ - 1]);
-        return res;
+        return static_cast<T>(res);
     }
 
     template <typename T>
@@ -397,6 +412,8 @@ namespace mofn
 
             os << std::endl;
         }
+
+        return os;
     }
 
     template <typename T>
@@ -409,6 +426,8 @@ namespace mofn
                 is >> rhs[i][j];
             }
         }
+
+        return is;
     }
 
     template <typename T>
@@ -530,6 +549,8 @@ namespace mofn
         T* tmp_row = data_[i];
         data_[i] = data_[j];
         data_[j] = tmp_row;
+
+        return *this;
     }
 
     template <typename T>

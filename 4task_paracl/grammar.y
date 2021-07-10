@@ -19,6 +19,7 @@
         struct BaseNode;
         struct OpNode;
         struct NumNode;
+        struct VarNode;
     }
 
     // Forward declaration of argument for the parser
@@ -34,6 +35,7 @@
         struct BaseNode;
         struct OpNode;
         struct NumNode;
+        struct VarNode;
     }
 
     namespace yy {
@@ -51,15 +53,20 @@
     SCOLON  ";"
     LRBR    "("     // left round bracket
     RRBR    ")"     // right round bracket
+    LCBR    "{"     // left curly bracket
+    RCBR    "}"     // right curly bracket
     ERR
 ;
 
-%token <int> NUMBER
-%nterm <se::BaseNode*> expr3
-%nterm <se::BaseNode*> expr2
-%nterm <se::BaseNode*> expr1
-%nterm <se::BaseNode*> expr0
-%nterm <se::INode*> instr; // instruction
+%token <int>            NUMBER
+%token <std::string>    NAME
+
+%nterm <se::BaseNode*>  line
+%nterm <se::BaseNode*>  expr3
+%nterm <se::BaseNode*>  expr2
+%nterm <se::BaseNode*>  expr1
+%nterm <se::BaseNode*>  expr0
+%nterm <se::INode*>     instr; // instruction
 
 %left '+' '-'
 %left '*' '/'
@@ -71,13 +78,42 @@
 program: instr                  {}
 ;
 
-instr: expr0 SCOLON instr       { 
-                                    $$ = new se::INode{$1};
+instr: line SCOLON instr        { 
+                                    $$ = new se::INode($1, driver->getSymtab());
                                     driver->addInstr($$);
                                 }
-| expr0 SCOLON                  { 
-                                    $$ = new se::INode{$1};
+| line SCOLON                   { 
+                                    $$ = new se::INode($1, driver->getSymtab());
                                     driver->addInstr($$);
+                                }
+| LCBR instr RCBR instr         {
+                                    // Open new scope
+                                    driver->openScope();
+
+                                    $$ = $2;
+
+                                    // Close this scope
+                                    driver->closeScope();
+                                }
+| LCBR instr RCBR               {
+                                    // Open new scope
+                                    driver->openScope();
+
+                                    $$ = $2;
+
+                                    // Close this scope
+                                    driver->closeScope();
+                                }
+;
+
+line: expr0                     {
+                                    $$ = $1;
+                                }
+| NAME EQUAL expr0              {
+                                    // Assign operation
+                                    $$ = new se::OpNode(se::OpNode::ASSIGN);
+                                    $$->addChild(new se::VarNode($1));
+                                    $$->addChild($3);
                                 }
 ;
 
@@ -120,8 +156,11 @@ expr2: PLUS expr3               {
                                 }
 ;
 
-expr3: NUMBER                   { 
+expr3: NUMBER                   {
                                     $$ = new se::NumNode($1);
+                                }
+| NAME                          {
+                                    $$ = new se::VarNode($1);
                                 }
 | LRBR expr0 RRBR               {
                                     $$ = $2;

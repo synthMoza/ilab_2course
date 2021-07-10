@@ -10,6 +10,8 @@ int main() {
     FlexLexer* lexer = new yyFlexLexer;
     yy::Driver driver(lexer);
     driver.parse();
-    driver.dumpProgram();
+    // driver.dumpProgram();
     driver.launch();
+
+    return 0;
 }

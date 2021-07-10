@@ -18,7 +18,7 @@ parse: grammar.y grammar.l
 	bison -d grammar.y
 	flex grammar.l
 
-%.yy.o: %.yy.cc
+lex.yy.o: lex.yy.cc
 	${CXX} -c -o $@ $< ${CXXFLAGS}
 
 %.o: %.cc

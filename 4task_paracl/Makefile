@@ -21,6 +21,9 @@ parse: grammar.y grammar.l
 lex.yy.o: lex.yy.cc
 	${CXX} -c -o $@ $< ${CXXFLAGS}
 
+grammar.tab.o: grammar.tab.cc
+	${CXX} -c -o $@ $< ${CXXFLAGS}	
+
 %.o: %.cc
 	${CXX} -c -o $@ $< ${CXXFLAGS}
 

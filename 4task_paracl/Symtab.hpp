@@ -35,5 +35,7 @@ namespace se {
         void insert(NameType type, const std::string& name);
         NameInfo* lookup(const std::string& name);
         Symtab* getParent();
+
+        ~Symtab();
     };
 }

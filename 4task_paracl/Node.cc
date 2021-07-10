@@ -76,8 +76,6 @@ int OpNode::process_u_minus(Symtab* table) {
 }
 
 int OpNode::process_assign(Symtab* table) {
-    std::cout << "ME!" << std::endl;
-
     VarNode* var_node = static_cast<VarNode*>(children_.at(0));
     BaseNode* expr_node = children_.at(1);
 

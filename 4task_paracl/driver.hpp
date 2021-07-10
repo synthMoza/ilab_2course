@@ -102,5 +102,16 @@ namespace yy {
         Symtab* getSymtab() {
             return cur_symtab_;
         }
+
+        ~Driver() {
+            // Remove global scope
+            delete global_symtab_;
+            // Remove all instruction nodes
+            for (auto inode : program_) {
+                delete inode;
+            }
+            // Delete lexer
+            delete plex_;
+        }
     };
 }

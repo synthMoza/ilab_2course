@@ -12,5 +12,6 @@ namespace se {
         INode(BaseNode* node, Symtab* table);
         // Commit the instruction
         void commit();
+        ~INode();
     };
 }

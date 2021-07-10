@@ -60,3 +60,11 @@ NameInfo* Symtab::lookup(const std::string& name) {
 Symtab* Symtab::getParent() {
     return parent_;
 }
+
+Symtab::~Symtab() {
+    // Clear hash table
+    for (auto pair : table_) {
+        if (pair.second != nullptr)
+            delete pair.second;
+    }
+}

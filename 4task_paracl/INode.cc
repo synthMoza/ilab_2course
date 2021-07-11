@@ -13,7 +13,6 @@ void INode::commit() {
         throw std::runtime_error("Unexpected null node during commit!");
 
     result = node_->processNode(table_);
-    std::cout << result << std::endl;
 }
 
 INode::~INode() {

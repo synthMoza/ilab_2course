@@ -49,17 +49,18 @@
 }
 
 %token
-    EQUAL   "="
-    MINUS   "-"
-    PLUS    "+"
-    MUL     "*"
-    DIV     "/"
-    SCOLON  ";"
-    LRBR    "("     // left round bracket
-    RRBR    ")"     // right round bracket
-    LCBR    "{"     // left curly bracket
-    RCBR    "}"     // right curly bracket
-    QMARK   "?"     // question mark
+    EQUAL       "="
+    MINUS       "-"
+    PLUS        "+"
+    MUL         "*"
+    DIV         "/"
+    SCOLON      ";"
+    LRBR        "("     // left round bracket
+    RRBR        ")"     // right round bracket
+    LCBR        "{"     // left curly bracket
+    RCBR        "}"     // right curly bracket
+    QMARK       "?"     // question mark
+    KW_PRINT    "print" // key-word
     ERR
 ;
 
@@ -126,6 +127,10 @@ line: expr0                     {
                                     $$->addChild(new se::VarNode($1));
                                     $$->addChild(new se::InputNode{});
                                 }
+| KW_PRINT expr0                {
+                                    $$ = new se::OutputNode{};
+                                    $$->addChild($2);
+                                }
 ;
 
 expr0: expr0 PLUS expr1         {
@@ -185,5 +190,7 @@ namespace yy {
         return driver->yylex(yylval);
     }
 
-    void parser::error(const std::string&) {}
+    void parser::error(const std::string&) {
+        std::cout << "ERROR!" << std::endl;
+    }
 }

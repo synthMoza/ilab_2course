@@ -36,7 +36,8 @@ namespace se {
     struct OpNode : public BaseNode {
         Symtab* table_;
         enum operation {
-            NONE = 0, PLUS, MINUS, MUL, DIV, U_MINUS, U_PLUS, ASSIGN, COUNT
+            NONE = 0, PLUS, MINUS, MUL, DIV, U_MINUS, U_PLUS, ASSIGN,
+            GR, GREQ, LS, LSEQ, EQUAL, NEQUAL, COUNT
         } op_;
 
         OpNode(operation op);
@@ -49,6 +50,12 @@ namespace se {
         int process_mul();
         int process_div();
         int process_assign();
+        int process_gr();
+        int process_greq();
+        int process_ls();
+        int process_lseq();
+        int process_equal();
+        int process_nequal();
     };
 
     // Temp realisation of input and output functions

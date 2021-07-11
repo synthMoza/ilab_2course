@@ -49,29 +49,43 @@
 }
 
 %token
-    EQUAL       "="
+    ASSIGN      "="
     MINUS       "-"
     PLUS        "+"
     MUL         "*"
     DIV         "/"
-    SCOLON      ";"
+
+    EQUAL       "=="
+    NEQUAL      "!="
+    GR          ">"
+    GREQ        ">="
+    LS          "<"
+    LSEQ        "<="
+    
     LRBR        "("     // left round bracket
     RRBR        ")"     // right round bracket
     LCBR        "{"     // left curly bracket
     RCBR        "}"     // right curly bracket
+
     QMARK       "?"     // question mark
     KW_PRINT    "print" // key-word
+    KW_WHILE    "while"
+    KW_IF       "if"
+
+    SCOLON      ";"
     ERR
 ;
 
 %token <int>            NUMBER
 %token <std::string>    NAME
 
-%nterm <se::BaseNode*>  line
 %nterm <se::BaseNode*>  expr3
 %nterm <se::BaseNode*>  expr2
 %nterm <se::BaseNode*>  expr1
 %nterm <se::BaseNode*>  expr0
+%nterm <se::BaseNode*>  l_relate;
+%nterm <se::BaseNode*>  l_equal;
+%nterm <se::BaseNode*>  line
 %nterm <se::INode*>     instr; // instruction
 
 %left '+' '-'
@@ -112,24 +126,58 @@ instr: line SCOLON instr        {
                                 }
 ;
 
-line: expr0                     {
+line: l_equal                   {
                                     $$ = $1;
                                 }
-| NAME EQUAL expr0              {
+| NAME ASSIGN l_equal           {
                                     // Assign operation
                                     $$ = new se::OpNode(se::OpNode::ASSIGN);
                                     $$->addChild(new se::VarNode($1));
                                     $$->addChild($3);
                                 }
-| NAME EQUAL QMARK              {
+| NAME ASSIGN QMARK             {
                                     // Input operator
                                     $$ = new se::OpNode(se::OpNode::ASSIGN);
                                     $$->addChild(new se::VarNode($1));
                                     $$->addChild(new se::InputNode{});
                                 }
-| KW_PRINT expr0                {
+| KW_PRINT l_equal              {
                                     $$ = new se::OutputNode{};
                                     $$->addChild($2);
+                                }
+;
+
+l_equal: l_equal EQUAL l_relate {
+                                    $$ = new se::OpNode(se::OpNode::EQUAL);
+                                    $$->addChild($1); $$->addChild($3);  
+                                }
+| l_equal NEQUAL l_relate       {
+                                    $$ = new se::OpNode(se::OpNode::NEQUAL);
+                                    $$->addChild($1); $$->addChild($3);  
+                                }
+| l_relate                      {
+                                    $$ = $1;
+                                }
+;
+
+l_relate: l_relate GR expr0     {
+                                    $$ = new se::OpNode(se::OpNode::GR);
+                                    $$->addChild($1); $$->addChild($3);
+                                }
+| l_relate GREQ expr0           {
+                                    $$ = new se::OpNode(se::OpNode::GREQ);
+                                    $$->addChild($1); $$->addChild($3);
+                                }
+| l_relate LS expr0             {
+                                    $$ = new se::OpNode(se::OpNode::LS);
+                                    $$->addChild($1); $$->addChild($3);
+                                }
+| l_relate LSEQ expr0           {
+                                    $$ = new se::OpNode(se::OpNode::LSEQ);
+                                    $$->addChild($1); $$->addChild($3);
+                                }
+| expr0                         {
+                                    $$ = $1;
                                 }
 ;
 

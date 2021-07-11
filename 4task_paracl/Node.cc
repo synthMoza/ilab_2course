@@ -88,6 +88,48 @@ int OpNode::process_assign() {
     return var_info->value_;
 }
 
+int OpNode::process_gr() {
+    if (children_.size() < 2)
+        throw std::runtime_error("Too less arguments for the operation!");
+    
+    return children_.at(0)->processNode(table_) > children_.at(1)->processNode(table_);
+}
+
+int OpNode::process_greq() {
+    if (children_.size() < 2)
+        throw std::runtime_error("Too less arguments for the operation!");
+    
+    return children_.at(0)->processNode(table_) >= children_.at(1)->processNode(table_);
+}
+
+int OpNode::process_ls() {
+    if (children_.size() < 2)
+        throw std::runtime_error("Too less arguments for the operation!");
+    
+    return children_.at(0)->processNode(table_) < children_.at(1)->processNode(table_);
+}
+
+int OpNode::process_lseq() {
+    if (children_.size() < 2)
+        throw std::runtime_error("Too less arguments for the operation!");
+    
+    return children_.at(0)->processNode(table_) <= children_.at(1)->processNode(table_);
+}
+
+int OpNode::process_equal() {
+    if (children_.size() < 2)
+        throw std::runtime_error("Too less arguments for the operation!");
+    
+    return children_.at(0)->processNode(table_) == children_.at(1)->processNode(table_);
+}
+
+int OpNode::process_nequal() {
+    if (children_.size() < 2)
+        throw std::runtime_error("Too less arguments for the operation!");
+    
+    return children_.at(0)->processNode(table_) != children_.at(1)->processNode(table_);
+}
+
 int OpNode::processNode(Symtab* table) {
     if (table == nullptr)
         throw std::runtime_error("Unexpected null symbol table!");
@@ -108,6 +150,19 @@ int OpNode::processNode(Symtab* table) {
             return process_u_minus();
         case ASSIGN:
             return process_assign();
+        case GR:
+            return process_gr();
+        case GREQ:
+            return process_greq();
+        case LS:
+            return process_ls();
+        case LSEQ:
+            return process_lseq();
+        case EQUAL:
+            return process_equal();
+        case NEQUAL:
+            return process_nequal();
+
         default:
             throw std::runtime_error("Failed to recognize the operation " + std::to_string(op_));
     }

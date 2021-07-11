@@ -11,7 +11,15 @@ namespace se {
 
         INode(BaseNode* node, Symtab* table);
         // Commit the instruction
-        void commit();
-        ~INode();
+        virtual void commit();
+        virtual ~INode();
+    };
+    
+    // "If" node that inherits from the instruction node
+    struct IfNode : public INode {
+        INode* code_;
+
+        IfNode(BaseNode* cond, Symtab* table, INode* code);
+        void commit() override;
     };
 }

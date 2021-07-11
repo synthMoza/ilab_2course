@@ -1,9 +1,11 @@
 %language "c++"
-
 %skeleton "lalr1.cc"
+
 %defines
 %define api.value.type variant
 %param {yy::Driver* driver}
+
+%locations
 
 %code requires
 {
@@ -22,6 +24,7 @@
         struct VarNode;
         struct InputNode;
         struct OutputNode;
+        struct IfNode;
     }
 
     // Forward declaration of argument for the parser
@@ -40,11 +43,12 @@
         struct VarNode;
         struct InputNode;
         struct OutputNode;
+        struct IfNode;
     }
 
     namespace yy {
 
-        parser::token_type yylex(parser::semantic_type* yylval, Driver* driver);
+        parser::token_type yylex(parser::semantic_type* yylval, parser::location_type* l, Driver* driver);
     }
 }
 
@@ -86,6 +90,7 @@
 %nterm <se::BaseNode*>  l_relate;
 %nterm <se::BaseNode*>  l_equal;
 %nterm <se::BaseNode*>  line
+%nterm <se::INode*>     scope;
 %nterm <se::INode*>     instr; // instruction
 
 %left '+' '-'
@@ -98,24 +103,20 @@
 program: instr                  {}
 ;
 
-instr: line SCOLON instr        { 
+instr: line                     {
                                     $$ = new se::INode($1, driver->getSymtab());
                                     driver->addInstr($$);
                                 }
-| line SCOLON                   { 
-                                    $$ = new se::INode($1, driver->getSymtab());
+| instr line                    {   
+                                    $$ = new se::INode($2, driver->getSymtab());
                                     driver->addInstr($$);
                                 }
-| LCBR instr RCBR instr         {
-                                    // Open new scope
-                                    driver->openScope();
-
+| instr scope                   {
                                     $$ = $2;
-
-                                    // Close this scope
-                                    driver->closeScope();
                                 }
-| LCBR instr RCBR               {
+;
+
+scope: LCBR instr RCBR          {
                                     // Open new scope
                                     driver->openScope();
 
@@ -126,22 +127,23 @@ instr: line SCOLON instr        {
                                 }
 ;
 
-line: l_equal                   {
+line: l_equal SCOLON            {
                                     $$ = $1;
                                 }
-| NAME ASSIGN l_equal           {
+| NAME ASSIGN l_equal SCOLON    {
                                     // Assign operation
                                     $$ = new se::OpNode(se::OpNode::ASSIGN);
                                     $$->addChild(new se::VarNode($1));
                                     $$->addChild($3);
                                 }
-| NAME ASSIGN QMARK             {
+| NAME ASSIGN QMARK SCOLON      {
                                     // Input operator
                                     $$ = new se::OpNode(se::OpNode::ASSIGN);
                                     $$->addChild(new se::VarNode($1));
                                     $$->addChild(new se::InputNode{});
                                 }
-| KW_PRINT l_equal              {
+| KW_PRINT l_equal SCOLON       {
+                                    // Output operator
                                     $$ = new se::OutputNode{};
                                     $$->addChild($2);
                                 }
@@ -234,11 +236,11 @@ expr3: NUMBER                   {
 
 namespace yy {
 
-    parser::token_type yylex(parser::semantic_type* yylval, Driver* driver) {
-        return driver->yylex(yylval);
+    parser::token_type yylex(parser::semantic_type* yylval, parser::location_type* l, Driver* driver) {
+        return driver->yylex(l, yylval);
     }
 
-    void parser::error(const std::string&) {
-        std::cout << "ERROR!" << std::endl;
+    void parser::error(const parser::location_type& l, const std::string& message) {
+        std::cout << message << ", line: " << l.begin.line << std::endl;
     }
 }

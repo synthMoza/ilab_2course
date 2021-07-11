@@ -4,7 +4,7 @@ using namespace yy;
 
 Driver::Driver(FlexLexer* plex) : global_symtab_ (new Symtab), cur_symtab_ {global_symtab_}, plex_ (plex) {}
 
-parser::token_type Driver::yylex(parser::semantic_type* yylval) {
+parser::token_type Driver::yylex(parser::location_type* l, parser::semantic_type* yylval) {
     parser::token_type tt = static_cast<parser::token_type>(plex_->yylex());
 
     if (tt == yy::parser::token_type::NUMBER)
@@ -16,9 +16,9 @@ parser::token_type Driver::yylex(parser::semantic_type* yylval) {
         yylval->swap<std::string>(tmp);
     }
 
-    std::cout.flush();
     return tt;
 }
+
 
 bool Driver::parse() {
     parser parser(this);
@@ -32,7 +32,7 @@ void Driver::addInstr(INode* instr) {
 
 void Driver::launch() {
     INode* cur = nullptr;
-    for (auto it = program_.rbegin(), it_end = program_.rend(); it != it_end; ++it) {
+    for (auto it = program_.begin(), it_end = program_.end(); it != it_end; ++it) {
         cur = *(it);
         cur->commit();
     }

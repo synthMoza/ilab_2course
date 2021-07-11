@@ -1,9 +1,8 @@
 %option c++
+%option yylineno
 
 %{
-
     #include "grammar.tab.hh"
-
 %}
 
 WS      [ \t\n\v]+
@@ -15,8 +14,8 @@ SYMBD   [a-zA-Z0-9_]
 %%
 
 {WS}                // skip all blanks and tabs
-"+"                 return yy::parser::token_type::PLUS;
 "-"                 return yy::parser::token_type::MINUS;
+"+"                 return yy::parser::token_type::PLUS;
 "*"                 return yy::parser::token_type::MUL;
 "/"                 return yy::parser::token_type::DIV;
 
@@ -41,7 +40,7 @@ SYMBD   [a-zA-Z0-9_]
 ";"                 return yy::parser::token_type::SCOLON;
 
 {SYMB}{SYMBD}*      return yy::parser::token_type::NAME;
-{DIGIT1}{DIGIT1}*   return yy::parser::token_type::NUMBER;
+{DIGIT1}{DIGIT}*    return yy::parser::token_type::NUMBER;
 
 .                   return yy::parser::token_type::ERR;
 

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <sstream>
 #include <FlexLexer.h>
 
 #include "Symtab.hpp"
@@ -24,7 +25,7 @@ namespace yy {
         Driver(FlexLexer* plex);
 
         // Method for getting the next lexem
-        parser::token_type yylex(parser::semantic_type* yylval);
+        parser::token_type yylex(parser::location_type* l, parser::semantic_type* yylval);
         // Parse the input code
         bool parse();
         // Add instruction to the program

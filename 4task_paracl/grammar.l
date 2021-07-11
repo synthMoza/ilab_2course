@@ -24,6 +24,7 @@ SYMBD   [a-zA-Z0-9_]
 ")"                 return yy::parser::token_type::RRBR;
 "{"                 return yy::parser::token_type::LCBR;
 "}"                 return yy::parser::token_type::RCBR;
+"?"                 return yy::parser::token_type::QMARK;
 "="                 return yy::parser::token_type::EQUAL;
 ";"                 return yy::parser::token_type::SCOLON;
 {DIGIT1}{DIGIT1}*   return yy::parser::token_type::NUMBER;

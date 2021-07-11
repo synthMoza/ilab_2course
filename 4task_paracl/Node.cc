@@ -21,44 +21,40 @@ int NumNode::processNode(Symtab* table) {
     return value_;
 }
 
-void NumNode::dumpNode() {
-    std::cout << value_;
-}
-
 // OpNode methods
-OpNode::OpNode(operation op) : op_(op) {}
+OpNode::OpNode(operation op) : op_(op), table_ (nullptr) {}
 
-int OpNode::process_plus(Symtab* table) {
+int OpNode::process_plus() {
     int res = 0;
     for (auto child : children_)
-        res += child->processNode(table);
+        res += child->processNode(table_);
 
     return res;   
 }
 
-int OpNode::process_minus(Symtab* table) {
-    int res = children_.at(0)->processNode(table);
+int OpNode::process_minus() {
+    int res = children_.at(0)->processNode(table_);
     for (auto it = std::next(children_.begin()), it_end = children_.end(); it != it_end; ++it) {
-        res -= (*it)->processNode(table);
+        res -= (*it)->processNode(table_);
     }
     
     return res;
 }
 
-int OpNode::process_mul(Symtab* table) {
+int OpNode::process_mul() {
     int res = 1;
     for (auto child : children_) {
-        res *= child->processNode(table);
+        res *= child->processNode(table_);
     }
 
     return res;
 }
 
-int OpNode::process_div(Symtab* table) {
-    int res = children_.at(0)->processNode(table);
+int OpNode::process_div() {
+    int res = children_.at(0)->processNode(table_);
     int by = 0;
     for (auto it = std::next(children_.begin()), it_end = children_.end(); it != it_end; ++it) {
-        by = (*it)->processNode(table);
+        by = (*it)->processNode(table_);
         if (by == 0)
             throw std::logic_error("Division by zero!");
         res /= by;
@@ -67,75 +63,51 @@ int OpNode::process_div(Symtab* table) {
     return res;
 }
 
-int OpNode::process_u_plus(Symtab* table) {
-    return children_.at(0)->processNode(table);
+int OpNode::process_u_plus() {
+    return children_.at(0)->processNode(table_);
 }
 
-int OpNode::process_u_minus(Symtab* table) {
-    return (-children_.at(0)->processNode(table));
+int OpNode::process_u_minus() {
+    return (-children_.at(0)->processNode(table_));
 }
 
-int OpNode::process_assign(Symtab* table) {
+int OpNode::process_assign() {
     VarNode* var_node = static_cast<VarNode*>(children_.at(0));
     BaseNode* expr_node = children_.at(1);
 
-    NameInfo* name_info = table->lookup(var_node->name_);
+    NameInfo* name_info = table_->lookup(var_node->name_);
     VarInfo* var_info = nullptr;
     if (name_info == nullptr) {
         // Declara the new variable
-        table->insert(VAR, var_node->name_);
-        name_info = table->lookup(var_node->name_);
+        table_->insert(VAR, var_node->name_);
+        name_info = table_->lookup(var_node->name_);
     }
     
     var_info = static_cast<VarInfo*>(name_info);
-    var_info->value_ = expr_node->processNode(table);
+    var_info->value_ = expr_node->processNode(table_);
     return var_info->value_;
 }
 
 int OpNode::processNode(Symtab* table) {
-    switch (op_) {
-        case PLUS:
-            return process_plus(table);
-        case MINUS:
-            return process_minus(table);
-        case MUL:
-            return process_mul(table);
-        case DIV:
-            return process_div(table);
-        case U_PLUS:
-            return process_u_plus(table);
-        case U_MINUS:
-            return process_u_minus(table);
-        case ASSIGN:
-            return process_assign(table);
-        default:
-            throw std::runtime_error("Failed to recognize the operation " + std::to_string(op_));
-    }
-}
+    if (table == nullptr)
+        throw std::runtime_error("Unexpected null symbol table!");
+    table_ = table;
 
-void OpNode::dumpNode() {
-    std::cout << "OP ";
     switch (op_) {
         case PLUS:
-            std::cout << "+";
-            break;
+            return process_plus();
         case MINUS:
-            std::cout << "-";
-            break;
+            return process_minus();
         case MUL:
-            std::cout << "*";
-            break;
+            return process_mul();
         case DIV:
-            std::cout << "/";
-            break;
+            return process_div();
         case U_PLUS:
-            break;
+            return process_u_plus();
         case U_MINUS:
-            std::cout << "-(u)";
-            break;
-        case ASSIGN:    
-            std::cout << "=";
-            break;
+            return process_u_minus();
+        case ASSIGN:
+            return process_assign();
         default:
             throw std::runtime_error("Failed to recognize the operation " + std::to_string(op_));
     }
@@ -154,6 +126,23 @@ int VarNode::processNode(Symtab* table) {
     return var_info->value_;
 }
 
-void VarNode::dumpNode() {
-    std::cout << name_;
+// InputNode methods
+
+int InputNode::processNode(Symtab* table) {
+    int input = 0;
+    
+    std::cin >> input;
+    return input;
+}
+
+// OutputNode methods
+
+int OutputNode::processNode(Symtab* table) {
+    if (children_.size() < 1)
+        throw std::runtime_error("Unexpected output error!");
+    
+    int output = 0;
+    output = children_.at(0)->processNode(table);
+    std::cout << output << std::endl;
+    return output;
 }

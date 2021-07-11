@@ -20,6 +20,8 @@
         struct OpNode;
         struct NumNode;
         struct VarNode;
+        struct InputNode;
+        struct OutputNode;
     }
 
     // Forward declaration of argument for the parser
@@ -36,6 +38,8 @@
         struct OpNode;
         struct NumNode;
         struct VarNode;
+        struct InputNode;
+        struct OutputNode;
     }
 
     namespace yy {
@@ -55,6 +59,7 @@
     RRBR    ")"     // right round bracket
     LCBR    "{"     // left curly bracket
     RCBR    "}"     // right curly bracket
+    QMARK   "?"     // question mark
     ERR
 ;
 
@@ -114,6 +119,12 @@ line: expr0                     {
                                     $$ = new se::OpNode(se::OpNode::ASSIGN);
                                     $$->addChild(new se::VarNode($1));
                                     $$->addChild($3);
+                                }
+| NAME EQUAL QMARK              {
+                                    // Input operator
+                                    $$ = new se::OpNode(se::OpNode::ASSIGN);
+                                    $$->addChild(new se::VarNode($1));
+                                    $$->addChild(new se::InputNode{});
                                 }
 ;
 

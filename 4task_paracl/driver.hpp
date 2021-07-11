@@ -21,97 +21,31 @@ namespace yy {
         std::vector<INode*> program_;
         FlexLexer* plex_;
     public:
-        Driver(FlexLexer* plex) : global_symtab_ (new Symtab), cur_symtab_ {global_symtab_}, plex_ (plex) {}
+        Driver(FlexLexer* plex);
 
-        parser::token_type yylex(parser::semantic_type* yylval) {
-            parser::token_type tt = static_cast<parser::token_type>(plex_->yylex());
-
-            if (tt == yy::parser::token_type::NUMBER)
-                yylval->as<int>() = std::stoi(plex_->YYText());
-            if (tt == yy::parser::token_type::NAME) {
-                std::string name(plex_->YYText());
-                parser::semantic_type tmp;
-                tmp.as<std::string>() = name;
-                yylval->swap<std::string>(tmp);
-            }
-
-            std::cout.flush();
-            return tt;
-        }
-
+        // Method for getting the next lexem
+        parser::token_type yylex(parser::semantic_type* yylval);
         // Parse the input code
-        bool parse() {
-            parser parser(this);
-            bool res = parser.parse();
-            return !res;
-        }
-
+        bool parse();
         // Add instruction to the program
-        void addInstr(INode* instr) {
-            program_.push_back(instr);
-        }
-
-        // Dump all program instructions
-        void dumpProgram() {
-            INode* cur = nullptr;
-            int counter  = 0;
-            
-            std::cout << "\nPROGRAM DUMP:\n" << std::endl;
-            for (auto it = program_.rbegin(), it_end = program_.rend(); it != it_end; ++it) {
-                cur = *(it);
-                std::cout << "[" << counter++ << "]" << "Instruction: ";
-                cur->node_->dumpNode();
-                std::cout << std::endl;
-            }
-        }
-
+        void addInstr(INode* instr);
         // Launch the parsed program
-        void launch() {
-            INode* cur = nullptr;
-            for (auto it = program_.rbegin(), it_end = program_.rend(); it != it_end; ++it) {
-                cur = *(it);
-                cur->commit();
-            }
-        }
+        void launch();
+        // Insert name in the symbol table of the current scope
+        void insert(NameType type, const std::string& name);
+        // Look up the name in the symbol table of the current scope
+        NameInfo* lookup(const std::string& name);
+        // Insert name in the symbol table of the global scope
+        void insertGlobal(NameType type, const std::string& name);
+        // Look up the name in the symbol table of the global scope
+        NameInfo* lookupGlobal(const std::string& name);
+        // Open a new scope
+        void openScope();
+        // Close the current scope
+        void closeScope();
+        // Get the symbol table of the current scope
+        Symtab* getSymtab();
 
-        void insert(NameType type, const std::string& name) {
-            if (cur_symtab_ == nullptr)
-                throw std::runtime_error("Empty current scope symbol table!");
-            
-            cur_symtab_->insert(type, name);
-        }
-
-        NameInfo* lookup(const std::string& name) {
-            if (cur_symtab_ == nullptr)
-                throw std::runtime_error("Empty current scope symbol table!");
-            
-            return cur_symtab_->lookup(name);
-        }
-
-        void openScope() {
-            Symtab* symtab = new Symtab(cur_symtab_);
-            cur_symtab_ = symtab;
-        }
-
-        void closeScope() {
-            Symtab* symtab = cur_symtab_->getParent();
-            delete cur_symtab_;
-            cur_symtab_ = symtab;
-        }
-
-        Symtab* getSymtab() {
-            return cur_symtab_;
-        }
-
-        ~Driver() {
-            // Remove global scope
-            delete global_symtab_;
-            // Remove all instruction nodes
-            for (auto inode : program_) {
-                delete inode;
-            }
-            // Delete lexer
-            delete plex_;
-        }
+        ~Driver();
     };
 }

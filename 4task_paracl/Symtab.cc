@@ -11,7 +11,6 @@ NameInfo::~NameInfo() {}
 VarInfo::VarInfo(int value) : value_ (value), NameInfo(VAR) {}
 
 VarInfo::VarInfo() : value_{}, NameInfo(VAR) {}
-
 // SymTab methods
 
 Symtab::Symtab() : parent_ (nullptr) {}

@@ -7,7 +7,7 @@
 
 #include "Node.hpp"
 
-#include "grammar.tab.hh"
+#include "compiler.tab.hh"
 
 namespace yy {
     using se::BaseNode;

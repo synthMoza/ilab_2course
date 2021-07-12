@@ -2,7 +2,7 @@
 %option yylineno
 
 %{
-    #include "grammar.tab.hh"
+    #include "compiler.tab.hh"
 %}
 
 WS      [ \t\n\v]+

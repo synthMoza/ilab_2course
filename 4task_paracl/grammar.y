@@ -9,22 +9,21 @@
 
 %code requires
 {
-    #include <algorithm>
-    #include <string>
-    #include <vector>
-
     #include "Node.hpp"
-    #include "INode.hpp"
+    #include "Symtab.hpp"
 
     namespace se {
-        struct INode;
-        struct BaseNode;
-        struct OpNode;
-        struct NumNode;
-        struct VarNode;
-        struct InputNode;
-        struct OutputNode;
-        struct IfNode;
+        // Nodes
+        class BaseNode;
+        class DeclNode;
+        class NumNode;
+        class BinOpNode;
+        class UnOpNode;
+        class ScopeNode;
+
+        // Symbol table
+        struct NameInfo;
+        struct VarInfo;
     }
 
     // Forward declaration of argument for the parser
@@ -36,14 +35,18 @@
     #include "driver.hpp"
 
     namespace se {
-        struct INode;
-        struct BaseNode;
-        struct OpNode;
-        struct NumNode;
-        struct VarNode;
-        struct InputNode;
-        struct OutputNode;
-        struct IfNode;
+        // Nodes
+        class BaseNode;
+        class DeclNode;
+        class NumNode;
+        class BinOpNode;
+        class UnOpNode;
+        class ScopeNode;
+        class WhileNode;
+
+        // Symbol table
+        struct NameInfo;
+        struct VarInfo;
     }
 
     namespace yy {
@@ -54,10 +57,12 @@
 
 %token
     ASSIGN      "="
+    
     MINUS       "-"
     PLUS        "+"
     MUL         "*"
     DIV         "/"
+    MOD         "%"
 
     EQUAL       "=="
     NEQUAL      "!="
@@ -65,6 +70,10 @@
     GREQ        ">="
     LS          "<"
     LSEQ        "<="
+    NOT         "!"
+
+    LAND        "&&"    // logical and
+    LOR         "||"    // logical or
     
     LRBR        "("     // left round bracket
     RRBR        ")"     // right round bracket
@@ -87,11 +96,17 @@
 %nterm <se::BaseNode*>  expr2
 %nterm <se::BaseNode*>  expr1
 %nterm <se::BaseNode*>  expr0
-%nterm <se::BaseNode*>  l_relate;
-%nterm <se::BaseNode*>  l_equal;
+%nterm <se::BaseNode*>  lgc_relate;     // logical related
+%nterm <se::BaseNode*>  lgc_equal;      // logical equal
+%nterm <se::BaseNode*>  lgc_and;        // logical and
+%nterm <se::BaseNode*>  lgc_or;         // logical or
+%nterm <se::BaseNode*>  pref;           // prefix
+%nterm <se::BaseNode*>  lvalue;
 %nterm <se::BaseNode*>  line
-%nterm <se::INode*>     scope;
-%nterm <se::INode*>     instr; // instruction
+%nterm <se::BaseNode*>  scope;
+%nterm <se::BaseNode*>  op_scope;
+%nterm <se::BaseNode*>  cl_scope;
+%nterm <se::BaseNode*>  instr;          // instruction
 
 %left '+' '-'
 %left '*' '/'
@@ -100,137 +115,182 @@
 
 %%
 
-program: instr                  {}
+program: instr                          {
+                                            driver->launch();
+                                        }
 ;
 
-instr: line                     {
-                                    $$ = new se::INode($1, driver->getSymtab());
-                                    driver->addInstr($$);
-                                }
-| instr line                    {   
-                                    $$ = new se::INode($2, driver->getSymtab());
-                                    driver->addInstr($$);
-                                }
-| instr scope                   {
-                                    $$ = $2;
-                                }
+instr: line                             {
+                                            driver->addInstruction($1);
+                                        }
+| instr line                            {   
+                                            driver->addInstruction($2);
+                                        }
+| instr scope                           {
+                                            driver->addInstruction($2);
+                                        }
 ;
 
-scope: LCBR instr RCBR          {
-                                    // Open new scope
-                                    driver->openScope();
+scope: op_scope instr cl_scope          {
 
-                                    $$ = $2;
-
-                                    // Close this scope
-                                    driver->closeScope();
-                                }
+                                            $$ = $3;
+                                        }
 ;
 
-line: l_equal SCOLON            {
-                                    $$ = $1;
-                                }
-| NAME ASSIGN l_equal SCOLON    {
-                                    // Assign operation
-                                    $$ = new se::OpNode(se::OpNode::ASSIGN);
-                                    $$->addChild(new se::VarNode($1));
-                                    $$->addChild($3);
-                                }
-| NAME ASSIGN QMARK SCOLON      {
-                                    // Input operator
-                                    $$ = new se::OpNode(se::OpNode::ASSIGN);
-                                    $$->addChild(new se::VarNode($1));
-                                    $$->addChild(new se::InputNode{});
-                                }
-| KW_PRINT l_equal SCOLON       {
-                                    // Output operator
-                                    $$ = new se::OutputNode{};
-                                    $$->addChild($2);
-                                }
+op_scope: LCBR                          {
+                                            driver->cur_scope_ = new ScopeNode(driver->cur_scope_);
+                                        }
 ;
 
-l_equal: l_equal EQUAL l_relate {
-                                    $$ = new se::OpNode(se::OpNode::EQUAL);
-                                    $$->addChild($1); $$->addChild($3);  
-                                }
-| l_equal NEQUAL l_relate       {
-                                    $$ = new se::OpNode(se::OpNode::NEQUAL);
-                                    $$->addChild($1); $$->addChild($3);  
-                                }
-| l_relate                      {
-                                    $$ = $1;
-                                }
+cl_scope: RCBR                          {
+                                            $$ = driver->cur_scope_;
+                                            driver->cur_scope_ = driver->cur_scope_->getPrevScope();
+                                        }
 ;
 
-l_relate: l_relate GR expr0     {
-                                    $$ = new se::OpNode(se::OpNode::GR);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| l_relate GREQ expr0           {
-                                    $$ = new se::OpNode(se::OpNode::GREQ);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| l_relate LS expr0             {
-                                    $$ = new se::OpNode(se::OpNode::LS);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| l_relate LSEQ expr0           {
-                                    $$ = new se::OpNode(se::OpNode::LSEQ);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| expr0                         {
-                                    $$ = $1;
-                                }
+lvalue: NAME                            {
+                                            se::NameInfo* name_info = driver->lookup($1);
+                                            se::VarInfo* var_info = nullptr;
+                                            if (name_info == nullptr) {
+                                                // Declare this variable
+                                                var_info = new se::VarInfo;
+                                                driver->insert(var_info, $1);
+                                            } else
+                                                var_info = static_cast<se::VarInfo*>(name_info);
+                                            
+                                            $$ = new se::VarNode($1, var_info);
+                                        }
 ;
 
-expr0: expr0 PLUS expr1         {
-                                    $$ = new se::OpNode(se::OpNode::PLUS);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| expr0 MINUS expr1             {
-                                    $$ = new se::OpNode(se::OpNode::MINUS);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| expr1                         {
-                                    $$ = $1;
-                                }
+line: lgc_or SCOLON                     {
+                                            $$ = $1;
+                                        }
+| lvalue ASSIGN lgc_or SCOLON           {
+                                            // Assign operator
+                                            $$ = new se::BinOpNode(se::ASSIGN, $1, $3);
+                                        }
+| lvalue ASSIGN QMARK SCOLON            {
+                                            // Assign operator with input value
+                                            se::UnOpNode* input = new se::UnOpNode(se::INPUT, nullptr);
+                                            $$ = new se::BinOpNode(se::ASSIGN, $1, input);
+                                        }
+| KW_PRINT lgc_or SCOLON                {
+                                            // Output operator
+                                            $$ = new se::UnOpNode(se::OUTPUT, $2);
+                                        }
+| KW_IF LRBR lgc_or RRBR scope          {
+                                            // Conditional operator
+                                            $$ = new se::IfNode($3, $5);
+                                        }
+| KW_WHILE LRBR lgc_or RRBR scope       {
+                                            // Loop operator
+                                            $$ = new se::WhileNode($3, $5);
+                                        }
 ;
 
-expr1: expr1 MUL expr2          {
-                                    $$ = new se::OpNode(se::OpNode::MUL);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| expr1 DIV expr2               {
-                                    $$ = new se::OpNode(se::OpNode::DIV);
-                                    $$->addChild($1); $$->addChild($3);
-                                }
-| expr2                         {
-                                    $$ = $1;
-                                }
+lgc_or: lgc_or LOR lgc_and              {
+                                            $$ = new se::BinOpNode(se::L_OR, $1, $3);
+                                        }
+| lgc_and                               {
+                                            $$ = $1;
+                                        }
 ;
 
-expr2: PLUS expr3               {
-                                    $$ = new se::OpNode(se::OpNode::U_PLUS);
-                                    $$->addChild($2);
-                                }
-| MINUS expr3                   {
-                                    $$ = new se::OpNode(se::OpNode::U_MINUS);
-                                    $$->addChild($2);
-                                }
-| expr3                         {
-                                    $$ = $1;
-                                }
+lgc_and: lgc_and LAND pref              {
+                                            $$ = new se::BinOpNode(se::L_AND, $1, $3);
+                                        }
+| pref                                  {
+                                            $$ = $1;
+                                        }
 ;
 
-expr3: NUMBER                   {
-                                    $$ = new se::NumNode($1);
-                                }
-| NAME                          {
-                                    $$ = new se::VarNode($1);
-                                }
-| LRBR expr0 RRBR               {
-                                    $$ = $2;
-                                }
+pref: NOT lgc_equal                     {
+                                            $$ = new se::UnOpNode(se::NOT, $2);
+                                        }
+| lgc_equal                             {
+                                            $$ = $1;
+                                        }
+;
+
+lgc_equal: lgc_equal EQUAL lgc_relate   {
+                                            $$ = new se::BinOpNode(se::EQUAL, $1, $3);
+                                        }
+| lgc_equal NEQUAL lgc_relate           {
+                                            $$ = new se::BinOpNode(se::NEQUAL, $1, $3);  
+                                        }
+| lgc_relate                            {
+                                            $$ = $1;
+                                        }
+;
+
+lgc_relate: lgc_relate GR expr0         {
+                                            $$ = new se::BinOpNode(se::GR, $1, $3);
+                                        }
+| lgc_relate GREQ expr0                 {
+                                            $$ = new se::BinOpNode(se::GREQ, $1, $3);
+                                        }
+| lgc_relate LS expr0                   {
+                                            $$ = new se::BinOpNode(se::LS, $1, $3);
+                                        }
+| lgc_relate LSEQ expr0                 {
+                                            $$ = new se::BinOpNode(se::LSEQ, $1, $3);
+                                        }
+| expr0                                 {
+                                            $$ = $1;
+                                        }
+;
+
+expr0: expr0 PLUS expr1                 {
+                                            $$ = new se::BinOpNode(se::PLUS, $1, $3);
+                                        }
+| expr0 MINUS expr1                     {
+                                            $$ = new se::BinOpNode(se::MINUS, $1, $3);
+                                        }
+| expr1                                 {
+                                            $$ = $1;
+                                        }
+;
+
+expr1: expr1 MUL expr2                  {
+                                            $$ = new se::BinOpNode(se::MUL, $1, $3);
+                                        }
+| expr1 DIV expr2                       {
+                                            $$ = new se::BinOpNode(se::DIV, $1, $3);
+                                        }
+| expr1 MOD expr2                       {
+                                            $$ = new se::BinOpNode(se::MOD, $1, $3);
+                                        }
+| expr2                                 {
+                                            $$ = $1;
+                                        }
+;
+
+expr2: PLUS expr3                       {
+                                            $$ = new se::UnOpNode(se::U_PLUS, $2);
+                                        }
+| MINUS expr3                           {
+                                            $$ = new se::UnOpNode(se::U_MINUS, $2);
+                                        }
+| expr3                                 {
+                                            $$ = $1;
+                                        }
+;
+
+expr3: NUMBER                           {
+                                            $$ = new se::NumNode($1);
+                                        }
+| NAME                                  {
+                                            se::VarInfo* var_info = static_cast<se::VarInfo*>(driver->lookup($1));
+                                            if (var_info == nullptr) {
+                                                // Run-time error
+                                                throw std::runtime_error("Variable " + $1 + " wasn't declared in this scope!");
+                                            }
+
+                                            $$ = new se::VarNode($1, var_info);
+                                        }
+| LRBR lgc_or RRBR                      {
+                                            $$ = $2;
+                                        }
 ;
 %%
 

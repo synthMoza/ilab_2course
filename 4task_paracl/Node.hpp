@@ -7,66 +7,112 @@
 
 namespace se {
     // Node structure that represents the basic class
-    struct BaseNode {
-        std::vector<BaseNode*> children_;
-
-        BaseNode();
-
-        void addChild(BaseNode* child);
-        virtual int processNode(Symtab* table) = 0;
+    class BaseNode {
+    public:
+        virtual int processNode() = 0;
+        virtual ~BaseNode();
     };
 
     // Number node
-    struct NumNode : public BaseNode {
+    class NumNode final : public BaseNode {
         int value_;
-
+    public:
         NumNode(int value);
-        int processNode(Symtab* table) override;
+        int processNode() override;
     };
 
-    // Variable node
-    struct VarNode : public BaseNode {
+    class DeclNode : public BaseNode {
+    protected:
         std::string name_;
+        NameInfo* name_info_;
+    public:
+        DeclNode(const std::string& name, NameInfo* name_info);
+        int processNode() override;
 
-        VarNode(const std::string& name);
-        int processNode(Symtab* table) override;
+        virtual ~DeclNode();
+    };
+    // Variable node that inherits from DeclNode and has the "setValue()" method
+    class VarNode final : public DeclNode {
+        public:
+            VarNode(const std::string& name, VarInfo* var_info);
+            int processNode() override;
+            void setValue(int value);
     };
 
-    // Operation node
-    struct OpNode : public BaseNode {
+    // Binary operation node
+    enum bin_op_type {
+        PLUS, MINUS, MUL, DIV, GR, ASSIGN, L_AND,
+        L_OR, GREQ, LS, LSEQ, EQUAL, NEQUAL, MOD
+    }; 
+    
+    class BinOpNode final : public BaseNode {
+        BaseNode* left_;
+        BaseNode* right_;
+        bin_op_type type_;
+    public:
+        BinOpNode(bin_op_type type, BaseNode* left, BaseNode* right);
+        int processNode() override;
+
+        ~BinOpNode();
+    };
+
+    // Unary operation node
+    enum un_op_type {
+        U_PLUS, U_MINUS, NOT, INPUT, OUTPUT
+    }; 
+    
+    class UnOpNode final : public BaseNode {
+        BaseNode* child_;
+        un_op_type type_;
+    public:
+        UnOpNode(un_op_type type, BaseNode* child);
+        int processNode() override;
+
+        ~UnOpNode();
+    };
+
+    // Scope node - the main part of the program
+    class ScopeNode final : public BaseNode {
+        std::vector<BaseNode*> instructions_;
+        ScopeNode* prev_;
         Symtab* table_;
-        enum operation {
-            NONE = 0, PLUS, MINUS, MUL, DIV, U_MINUS, U_PLUS, ASSIGN,
-            GR, GREQ, LS, LSEQ, EQUAL, NEQUAL, COUNT
-        } op_;
+    public:
+        ScopeNode(ScopeNode* prev);
 
-        OpNode(operation op);
-        int processNode(Symtab* table) override;
-    private:
-        int process_plus();
-        int process_u_plus();
-        int process_u_minus();
-        int process_minus();
-        int process_mul();
-        int process_div();
-        int process_assign();
-        int process_gr();
-        int process_greq();
-        int process_ls();
-        int process_lseq();
-        int process_equal();
-        int process_nequal();
+        // Wrappers for symbol table methods
+        void insert(NameInfo* info, const std::string& name);
+        NameInfo* lookup(const std::string& name);
+        // Insert new instruction
+        void addInstruction(BaseNode* node);
+        // Get the previous scope
+        ScopeNode* getPrevScope();
+
+        int processNode() override;
+
+        ~ScopeNode();
     };
 
-    // Temp realisation of input and output functions
-    // Console input node
-    struct InputNode : public BaseNode {
-        int processNode(Symtab* table) override;
+    // "If" operator node
+    class IfNode final : public BaseNode {
+        BaseNode* cond_;
+        BaseNode* scope_;
+    public:
+        IfNode(BaseNode* cond, BaseNode* scope);
+
+        int processNode() override;
+
+        ~IfNode();
     };
 
+    // "While" operator node
+    class WhileNode final : public BaseNode {
+        BaseNode* cond_;
+        BaseNode* scope_;
+    public:
+        WhileNode(BaseNode* cond, BaseNode* scope);
 
-    // Output node
-    struct OutputNode : public BaseNode {
-        int processNode(Symtab* table) override;
+        int processNode() override;
+
+        ~WhileNode();
     };
 }

@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -O2 -MD
 
-SRC_OBJ = main.o driver.o Node.o INode.o Symtab.o
+SRC_OBJ = main.o driver.o Symtab.o Node.o
 PARSER_OBJ = lex.yy.o grammar.tab.o
 
 RMFILES = lex.yy.cc grammar.tab.cc grammar.tab.hh stack.hh *.d *.o location.hh position.hh

@@ -22,8 +22,10 @@ int main(int argc, char* argv[]) {
     lexer->switch_streams(input_file, std::cout);
     yy::Driver driver(lexer);
     driver.parse();
-    driver.launch();
 
+    // Free resources
     input_file.close();
+    delete lexer;
+
     return 0;
 }

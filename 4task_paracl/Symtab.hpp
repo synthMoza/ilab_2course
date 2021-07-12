@@ -5,7 +5,7 @@
 
 namespace se {
     enum NameType {
-        NONE = 0, VAR, FUNC, COUNT
+        VAR, FUNC
     };
 
     // The value of the symbol table, contains info about this name
@@ -24,17 +24,12 @@ namespace se {
         VarInfo(int value);
     };
 
-    // Symbol table to store information about each name declaration in the program
+    // Symbol table to store information about each name declaration in the scopes
     class Symtab {
         std::unordered_map<std::string, NameInfo*> table_;
-        Symtab* parent_; // parent symbol table (inner scope)
     public:
-        Symtab();
-        Symtab(Symtab* parent);
-
-        void insert(NameType type, const std::string& name);
+        void insert(NameInfo* info, const std::string& name);
         NameInfo* lookup(const std::string& name);
-        Symtab* getParent();
 
         ~Symtab();
     };

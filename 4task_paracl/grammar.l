@@ -18,6 +18,7 @@ SYMBD   [a-zA-Z0-9_]
 "+"                 return yy::parser::token_type::PLUS;
 "*"                 return yy::parser::token_type::MUL;
 "/"                 return yy::parser::token_type::DIV;
+"%"                 return yy::parser::token_type::MOD;
 
 "=="                return yy::parser::token_type::EQUAL;
 "!="                return yy::parser::token_type::NEQUAL;
@@ -25,6 +26,10 @@ SYMBD   [a-zA-Z0-9_]
 ">="                return yy::parser::token_type::GREQ;
 "<"                 return yy::parser::token_type::LS;
 "<="                return yy::parser::token_type::LSEQ;
+"!"                 return yy::parser::token_type::NOT;
+
+"&&"                return yy::parser::token_type::LAND;
+"||"                return yy::parser::token_type::LOR;
 
 "("                 return yy::parser::token_type::LRBR;
 ")"                 return yy::parser::token_type::RRBR;
@@ -41,6 +46,7 @@ SYMBD   [a-zA-Z0-9_]
 
 {SYMB}{SYMBD}*      return yy::parser::token_type::NAME;
 {DIGIT1}{DIGIT}*    return yy::parser::token_type::NUMBER;
+{DIGIT}             return yy::parser::token_type::NUMBER;
 
 .                   return yy::parser::token_type::ERR;
 

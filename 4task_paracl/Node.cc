@@ -2,202 +2,201 @@
 
 using namespace se;
 
-// Base node methods
-BaseNode::BaseNode() : 
-    children_{} {}
-
-void BaseNode::addChild(BaseNode* child) {
-    if (child == nullptr)
-        throw std::runtime_error("Unexpected nullptr in Node!");
-    
-    children_.push_back(child);
-}
+// Base Node methods
+BaseNode::~BaseNode() {}
 
 // NumNode methods
 NumNode::NumNode(int value) : 
     value_ (value) {}
 
-int NumNode::processNode(Symtab* table) {
+int NumNode::processNode() {
     return value_;
 }
 
-// OpNode methods
-OpNode::OpNode(operation op) : op_(op), table_ (nullptr) {}
+// DeclNode methods
 
-int OpNode::process_plus() {
-    int res = 0;
-    for (auto child : children_)
-        res += child->processNode(table_);
+DeclNode::DeclNode(const std::string& name, NameInfo* name_info) : name_ (name), name_info_ (name_info) {}
 
-    return res;   
+int DeclNode::processNode() {
+    // Nothing
+    return -1;
 }
 
-int OpNode::process_minus() {
-    int res = children_.at(0)->processNode(table_);
-    for (auto it = std::next(children_.begin()), it_end = children_.end(); it != it_end; ++it) {
-        res -= (*it)->processNode(table_);
-    }
-    
-    return res;
-}
-
-int OpNode::process_mul() {
-    int res = 1;
-    for (auto child : children_) {
-        res *= child->processNode(table_);
-    }
-
-    return res;
-}
-
-int OpNode::process_div() {
-    int res = children_.at(0)->processNode(table_);
-    int by = 0;
-    for (auto it = std::next(children_.begin()), it_end = children_.end(); it != it_end; ++it) {
-        by = (*it)->processNode(table_);
-        if (by == 0)
-            throw std::logic_error("Division by zero!");
-        res /= by;
-    }
-    
-    return res;
-}
-
-int OpNode::process_u_plus() {
-    return children_.at(0)->processNode(table_);
-}
-
-int OpNode::process_u_minus() {
-    return (-children_.at(0)->processNode(table_));
-}
-
-int OpNode::process_assign() {
-    VarNode* var_node = static_cast<VarNode*>(children_.at(0));
-    BaseNode* expr_node = children_.at(1);
-
-    NameInfo* name_info = table_->lookup(var_node->name_);
-    VarInfo* var_info = nullptr;
-    if (name_info == nullptr) {
-        // Declara the new variable
-        table_->insert(VAR, var_node->name_);
-        name_info = table_->lookup(var_node->name_);
-    }
-    
-    var_info = static_cast<VarInfo*>(name_info);
-    var_info->value_ = expr_node->processNode(table_);
-    return var_info->value_;
-}
-
-int OpNode::process_gr() {
-    if (children_.size() < 2)
-        throw std::runtime_error("Too less arguments for the operation!");
-    
-    return children_.at(0)->processNode(table_) > children_.at(1)->processNode(table_);
-}
-
-int OpNode::process_greq() {
-    if (children_.size() < 2)
-        throw std::runtime_error("Too less arguments for the operation!");
-    
-    return children_.at(0)->processNode(table_) >= children_.at(1)->processNode(table_);
-}
-
-int OpNode::process_ls() {
-    if (children_.size() < 2)
-        throw std::runtime_error("Too less arguments for the operation!");
-    
-    return children_.at(0)->processNode(table_) < children_.at(1)->processNode(table_);
-}
-
-int OpNode::process_lseq() {
-    if (children_.size() < 2)
-        throw std::runtime_error("Too less arguments for the operation!");
-    
-    return children_.at(0)->processNode(table_) <= children_.at(1)->processNode(table_);
-}
-
-int OpNode::process_equal() {
-    if (children_.size() < 2)
-        throw std::runtime_error("Too less arguments for the operation!");
-    
-    return children_.at(0)->processNode(table_) == children_.at(1)->processNode(table_);
-}
-
-int OpNode::process_nequal() {
-    if (children_.size() < 2)
-        throw std::runtime_error("Too less arguments for the operation!");
-    
-    return children_.at(0)->processNode(table_) != children_.at(1)->processNode(table_);
-}
-
-int OpNode::processNode(Symtab* table) {
-    if (table == nullptr)
-        throw std::runtime_error("Unexpected null symbol table!");
-    table_ = table;
-
-    switch (op_) {
-        case PLUS:
-            return process_plus();
-        case MINUS:
-            return process_minus();
-        case MUL:
-            return process_mul();
-        case DIV:
-            return process_div();
-        case U_PLUS:
-            return process_u_plus();
-        case U_MINUS:
-            return process_u_minus();
-        case ASSIGN:
-            return process_assign();
-        case GR:
-            return process_gr();
-        case GREQ:
-            return process_greq();
-        case LS:
-            return process_ls();
-        case LSEQ:
-            return process_lseq();
-        case EQUAL:
-            return process_equal();
-        case NEQUAL:
-            return process_nequal();
-
-        default:
-            throw std::runtime_error("Failed to recognize the operation " + std::to_string(op_));
-    }
-}
+DeclNode::~DeclNode() {}
 
 // VarNode methods
 
-VarNode::VarNode(const std::string& name) : name_ (name) {}
+VarNode::VarNode(const std::string& name, VarInfo* var_info) : DeclNode(name, var_info) {}
 
-int VarNode::processNode(Symtab* table) {
-    NameInfo* name_info = table->lookup(name_);
-    if (name_info == nullptr)
-        throw std::runtime_error("Variable " + name_ + " wasn't declared in this scope");
+void VarNode::setValue(int value) {
+    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
+    var_info->value_ = value;
+}
 
-    VarInfo* var_info = static_cast<VarInfo*>(name_info);
+int VarNode::processNode() {
+    // Nothing
+    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
     return var_info->value_;
 }
 
-// InputNode methods
+// Binary Operation Node
 
-int InputNode::processNode(Symtab* table) {
-    int input = 0;
+BinOpNode::BinOpNode(bin_op_type type, BaseNode* left, BaseNode* right) : type_ (type), left_ (left), right_ (right) {}
+
+#define CASE_BIN_OP(name, op)                                       \
+    case (name):                                                    \
+        return (left_->processNode() op right_->processNode());     \
+
+int BinOpNode::processNode() {
+    if (left_ == nullptr || right_ == nullptr)
+        throw std::runtime_error("Unexpected null children!");
     
-    std::cin >> input;
-    return input;
+    int value = 0;
+    VarNode* lvalue = nullptr;
+    
+    switch (type_) {
+        CASE_BIN_OP(PLUS, +);
+        CASE_BIN_OP(MINUS, -);
+        CASE_BIN_OP(MUL, *);
+        CASE_BIN_OP(MOD, %);
+        CASE_BIN_OP(GR, >);
+        CASE_BIN_OP(GREQ, >=);
+        CASE_BIN_OP(LS, <);
+        CASE_BIN_OP(LSEQ, <);
+        CASE_BIN_OP(EQUAL, ==);
+        CASE_BIN_OP(NEQUAL, !=);
+        CASE_BIN_OP(L_AND, &&);
+        CASE_BIN_OP(L_OR, ||);
+        case DIV:
+            value = right_->processNode();
+            if (value == 0)
+                throw std::logic_error("Division by zero!");
+            return left_->processNode() / value;
+        case ASSIGN:
+            lvalue = static_cast<VarNode*>(left_);
+            value = right_->processNode();
+            lvalue->setValue(value);
+            return value;
+        default:
+            throw std::runtime_error("Unknown binary operation type!");
+    }
 }
 
-// OutputNode methods
+BinOpNode::~BinOpNode() {
+    delete left_;
+    delete right_;
+}
 
-int OutputNode::processNode(Symtab* table) {
-    if (children_.size() < 1)
-        throw std::runtime_error("Unexpected output error!");
+// Unary operation node
+
+UnOpNode::UnOpNode(un_op_type type, BaseNode* child) : type_ (type), child_ (child) {}
+
+int UnOpNode::processNode() {
+    int value = 0;
+    switch (type_) {
+        case U_PLUS:
+            return child_->processNode();
+        case U_MINUS:
+            return (-child_->processNode());
+        case NOT:
+            return (!child_->processNode());
+        case INPUT:
+            std::cin >> value;
+            return value;
+        case OUTPUT:
+            value = child_->processNode(); 
+            std::cout << value << std::endl;
+            return value;
+        default:
+            throw std::runtime_error("Unknown unary operator type!");
+    }
+}
+
+UnOpNode::~UnOpNode() {
+    if (child_ != nullptr)
+        delete child_;
+}
+
+// Scope node methods
+
+ScopeNode::ScopeNode(ScopeNode* prev) : prev_ (prev), table_ (new Symtab) {}
+
+int ScopeNode::processNode() {
+    int result = 0;
+
+    for (auto node : instructions_) {
+        // Commit each node
+        result = node->processNode();
+    }
+
+    return result;
+}
+
+void ScopeNode::insert(NameInfo* info, const std::string& name) {
+    // If it already exists, runtime error while PARSING
+    if (table_ == nullptr)
+        throw std::runtime_error("Unexpected null symbol table!");
     
-    int output = 0;
-    output = children_.at(0)->processNode(table);
-    std::cout << output << std::endl;
-    return output;
+    table_->insert(info, name);
+}
+
+NameInfo* ScopeNode::lookup(const std::string& name) {
+    ScopeNode* look_scope = this;
+    NameInfo* info_p = nullptr;
+
+    do {
+        info_p = look_scope->table_->lookup(name);
+        if (info_p != nullptr)
+            return info_p;
+    } while ((look_scope = look_scope->prev_) != nullptr);
+
+
+    return nullptr;
+}
+
+void ScopeNode::addInstruction(BaseNode* node) {
+    instructions_.push_back(node);
+}
+
+ScopeNode* ScopeNode::getPrevScope() {
+    return prev_;
+}
+
+ScopeNode::~ScopeNode() {
+    delete table_;
+
+    for (auto node : instructions_)
+        delete node;
+}
+
+// IfNode methods
+
+IfNode::IfNode(BaseNode* cond, BaseNode* scope) : cond_ (cond), scope_ (scope) {}
+
+int IfNode::processNode() {
+    if (cond_->processNode())
+        scope_->processNode();
+
+    return 0;
+}
+
+IfNode::~IfNode() {
+    delete cond_;
+    delete scope_;
+}
+
+// While node methods
+
+WhileNode::WhileNode(BaseNode* cond, BaseNode* scope) : cond_ (cond), scope_ (scope) {}
+
+int WhileNode::processNode() {
+    while (cond_->processNode())
+        scope_->processNode();
+    
+    return 0;
+}
+
+WhileNode::~WhileNode() {
+    delete cond_;
+    delete scope_;
 }

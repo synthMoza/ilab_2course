@@ -7,10 +7,17 @@ PARSER_OBJ = lex.yy.o compiler.tab.o
 RMFILES = lex.yy.cc compiler.tab.cc compiler.tab.hh stack.hh *.d *.o location.hh position.hh
 RMEXEC = out
 
+TEST_SCRIPT = launch_tests.sh
+
 .PHONY: clean all
 
 all: out
 
+# Compile the program and launch tests
+tests: out
+	./${TEST_SCRIPT}
+
+# Compile the program
 out: parse ${PARSER_OBJ} ${SRC_OBJ}
 	${CXX} -o $@ ${SRC_OBJ} ${PARSER_OBJ}
 
@@ -27,6 +34,7 @@ compiler.tab.o: compiler.tab.cc
 %.o: %.cc
 	${CXX} -c -o $@ $< ${CXXFLAGS}
 
+# Remove flex & bison output files and compilation files
 clean:
 	rm -rf ${RMEXEC} ${RMFILES}
 

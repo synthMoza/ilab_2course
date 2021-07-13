@@ -1,5 +1,7 @@
 #include "Symtab.hpp"
 
+#include <stdexcept>
+
 using namespace se;
 
 // NameInfo methods

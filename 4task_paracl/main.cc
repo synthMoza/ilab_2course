@@ -1,11 +1,6 @@
 #include <iostream>
-#include <fstream>
 
 #include "driver.hpp"
-
-int yyFlexLexer::yywrap() {
-    return 1;
-}
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -13,19 +8,13 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // Open the input file
-    std::ifstream input_file;
-    input_file.open((argv[1]));
+    yy::Driver driver(argv[1]);
+    try {
+        driver.parse();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
-    FlexLexer* lexer = new yyFlexLexer;
-    // Set new input stream
-    lexer->switch_streams(input_file, std::cout);
-    yy::Driver driver(lexer);
-    driver.parse();
-
-    // Free resources
-    input_file.close();
-    delete lexer;
-
-    return 0;
+    return EXIT_SUCCESS;
 }

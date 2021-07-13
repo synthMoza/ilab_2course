@@ -1,8 +1,14 @@
 %option c++
 %option yylineno
+%option noyywrap nounput noinput batch debug
+
+%option yyclass="yy::Scanner"
 
 %{
     #include "compiler.tab.hh"
+    #include "Scanner.hpp"
+
+    #define YY_USER_ACTION updateLocation();
 %}
 
 WS      [ \t\n\v]+
@@ -13,7 +19,7 @@ SYMBD   [a-zA-Z0-9_]
 
 %%
 
-{WS}                // skip all blanks and tabs
+{WS}                
 "-"                 return yy::parser::token_type::MINUS;
 "+"                 return yy::parser::token_type::PLUS;
 "*"                 return yy::parser::token_type::MUL;

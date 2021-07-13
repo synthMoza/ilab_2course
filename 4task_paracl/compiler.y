@@ -3,6 +3,7 @@
 
 %defines
 %define api.value.type variant
+%define parse.error custom
 %param {yy::Driver* driver}
 
 %locations
@@ -132,7 +133,6 @@ instr: line                             {
 ;
 
 scope: op_scope instr cl_scope          {
-
                                             $$ = $3;
                                         }
 ;
@@ -283,7 +283,8 @@ expr3: NUMBER                           {
                                             se::VarInfo* var_info = static_cast<se::VarInfo*>(driver->lookup($1));
                                             if (var_info == nullptr) {
                                                 // Run-time error
-                                                throw std::runtime_error("Variable " + $1 + " wasn't declared in this scope!");
+                                                driver->report_parse_error(@1, ER_UNDEFINED_NAME);
+                                                throw std::runtime_error("Compilation failed!");
                                             }
 
                                             $$ = new se::VarNode($1, var_info);
@@ -300,7 +301,11 @@ namespace yy {
         return driver->yylex(l, yylval);
     }
 
-    void parser::error(const parser::location_type& l, const std::string& message) {
-        std::cout << message << ", line: " << l.begin.line << std::endl;
+    void parser::error(const parser::location_type& loc, const std::string& message) {
+        std::cout << message << " in line " << loc.begin.line << std::endl;
+    }
+
+    void yy::parser::report_syntax_error(yy::parser::context const& ctx) const {
+        driver->report_syntax_error(ctx);
     }
 }

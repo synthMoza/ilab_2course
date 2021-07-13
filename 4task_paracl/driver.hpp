@@ -1,18 +1,15 @@
 #pragma once
 
 #include <iostream>
+#include <string>
+#include <fstream>
 #include <vector>
 #include <sstream>
 #include <FlexLexer.h>
 
 #include "Node.hpp"
 #include "Scanner.hpp"
-
 #include "compiler.tab.hh"
-
-#include <string>
-#include <vector>
-#include <fstream>
 
 namespace yy {
     using se::BaseNode;
@@ -31,7 +28,7 @@ namespace yy {
         std::vector<std::string> lines_; // all program lines to report errors
         const char* file_name_;
     public:
-        ScopeNode* cur_scope_;
+        ScopeNode* cur_scope_; // curent program scope (global scope by default)
 
         Driver(const char* file_name);
 
@@ -41,10 +38,10 @@ namespace yy {
         bool parse();
         // Wrappers for scope node methods
         void insert(NameInfo* info, const std::string& name);
-        NameInfo* lookup(const std::string& name);
-        void addInstruction(BaseNode* node);
+        NameInfo* lookup(const std::string& name) const;
+        void addInstruction(BaseNode* node) const;
         // Launch the program
-        int launch();
+        int launch() const;
         // Error handling
         void report_syntax_error(parser::context const& ctx) const;
         void report_error_position(const parser::location_type& loc) const;

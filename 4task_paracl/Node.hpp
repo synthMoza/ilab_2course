@@ -21,6 +21,7 @@ namespace se {
         int processNode() override;
     };
 
+    // Declaration node
     class DeclNode : public BaseNode {
     protected:
         std::string name_;
@@ -31,6 +32,7 @@ namespace se {
 
         virtual ~DeclNode();
     };
+    
     // Variable node that inherits from DeclNode and has the "setValue()" method
     class VarNode final : public DeclNode {
         public:

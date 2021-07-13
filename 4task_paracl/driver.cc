@@ -36,7 +36,7 @@ parser::token_type Driver::yylex(parser::location_type* yyloc, parser::semantic_
         yylval->swap<std::string>(tmp);
     }
 
-    
+    // Update current location in the program
     *yyloc = plex_->getCurrentLocation();
 
     return tt;
@@ -52,15 +52,15 @@ void Driver::insert(NameInfo* info, const std::string& name) {
     cur_scope_->insert(info, name);
 }
 
-NameInfo* Driver::lookup(const std::string& name) {
+NameInfo* Driver::lookup(const std::string& name) const {
     return cur_scope_->lookup(name);
 }
 
-void Driver::addInstruction(BaseNode* node) {
+void Driver::addInstruction(BaseNode* node) const {
     cur_scope_->addInstruction(node);
 }
 
-int Driver::launch() {
+int Driver::launch() const {
     return cur_scope_->processNode();
 }
 
@@ -69,7 +69,7 @@ void Driver::report_syntax_error(yy::parser::context const& ctx) const {
     std::cerr << file_name_ << ": ";
     std::cerr << ASCI_Color::red() << "syntax error" << ASCI_Color::def() << " in line " << lineno << ", ";
 
-    enum { TOKENMAX = 26 }; // max tokens amount to be printed
+    enum { TOKENMAX = 20 }; // max tokens amount to be printed
     yy::parser::symbol_kind_type expected_tokens[TOKENMAX];
     int num = ctx.expected_tokens(expected_tokens, TOKENMAX);
 
@@ -81,6 +81,7 @@ void Driver::report_syntax_error(yy::parser::context const& ctx) const {
     std::cerr << ":" << std::endl;
     yy::parser::location_type location = ctx.location();
     report_error_position(location);
+    throw std::runtime_error("Compilation failed!");
 }
 
 void Driver::report_error_position(const parser::location_type& loc) const {

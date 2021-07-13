@@ -13,20 +13,6 @@
     #include "Node.hpp"
     #include "Symtab.hpp"
 
-    namespace se {
-        // Nodes
-        class BaseNode;
-        class DeclNode;
-        class NumNode;
-        class BinOpNode;
-        class UnOpNode;
-        class ScopeNode;
-
-        // Symbol table
-        struct NameInfo;
-        struct VarInfo;
-    }
-
     // Forward declaration of argument for the parser
     namespace yy { class Driver; }
 }
@@ -34,21 +20,6 @@
 %code
 {
     #include "driver.hpp"
-
-    namespace se {
-        // Nodes
-        class BaseNode;
-        class DeclNode;
-        class NumNode;
-        class BinOpNode;
-        class UnOpNode;
-        class ScopeNode;
-        class WhileNode;
-
-        // Symbol table
-        struct NameInfo;
-        struct VarInfo;
-    }
 
     namespace yy {
 
@@ -302,7 +273,7 @@ namespace yy {
     }
 
     void parser::error(const parser::location_type& loc, const std::string& message) {
-        std::cout << message << " in line " << loc.begin.line << std::endl;
+        std::cerr << message << " in line " << loc.begin.line << std::endl;
     }
 
     void yy::parser::report_syntax_error(yy::parser::context const& ctx) const {

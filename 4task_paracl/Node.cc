@@ -1,32 +1,88 @@
 #include "Node.hpp"
 
+#include <stack>
+
 using namespace se;
 
-// Base Node methods
-BaseNode::~BaseNode() {}
+// BaseNode methods
 
-// NumNode methods
-NumNode::NumNode(int value) : 
-    value_ (value) {}
+// Simple deallocation with casting to proper type with calling destructor
+#define DEFAULT_DEALLOC(val, name)                  \
+    case node_type::val:                            \
+    {                                               \
+        name* tmp = static_cast<name*>(this);       \
+        std::cout << "tmp=" << tmp << std::endl;    \
+        tmp->~name();                               \
+    } break;                                        \
 
-int NumNode::processNode() {
-    return value_;
+// Static functions for processing children during clearing
+static BaseNode* getLeftChild(node_type type, BaseNode* node) {
+    switch (type) {
+        case node_type::BIN_OP: {
+            BinOpNode* bin_op_node = static_cast<BinOpNode*>(node);
+            return bin_op_node->getLeftChild();
+        }
+        case node_type::UN_OP: {
+            UnOpNode* un_op_node = static_cast<UnOpNode*>(node);
+            return un_op_node->getChild();
+        }
+        default:
+            return nullptr;
+    }
 }
 
-// DeclNode methods
-
-DeclNode::DeclNode(const std::string& name, NameInfo* name_info) : name_ (name), name_info_ (name_info) {}
-
-int DeclNode::processNode() {
-    // Nothing
-    return -1;
+static BaseNode* getRightChild(node_type type, BaseNode* node) {
+    if (type == node_type::BIN_OP) {
+        BinOpNode* bin_op_node = static_cast<BinOpNode*>(node);
+        return bin_op_node->getRightChild();
+    } else
+        return nullptr;
 }
 
-DeclNode::~DeclNode() {}
+void BaseNode::destroy_node() {
+    switch (type_) {
+        DEFAULT_DEALLOC(NUM, NumNode);
+        DEFAULT_DEALLOC(VAR, VarNode);
+        DEFAULT_DEALLOC(SCOPE, ScopeNode);
+        DEFAULT_DEALLOC(IF, IfNode);
+        DEFAULT_DEALLOC(WHILE, WhileNode);
+        DEFAULT_DEALLOC(UN_OP, UnOpNode);
+        case node_type::BIN_OP: {
+            // Delete binary tree using stack
+            std::stack<BaseNode*> nodes;
+            BaseNode* current = this;
+            BaseNode* tmp = nullptr;
+
+            while (current != nullptr || !nodes.empty()) {
+                while (current != nullptr) {
+                    nodes.push(current);
+                    current = getLeftChild(current->type_, current);
+                }
+
+                // Now current is nullptr
+                current = nodes.top();
+                nodes.pop();
+                tmp = getRightChild(current->type_, current);
+                // std::cout << "current=" << current << std::endl;
+
+                // std::cout << "HERE!" << std::endl;
+
+                delete current;
+                current = tmp;
+            }
+            
+            break;
+        }
+        default:
+            throw std::logic_error("Unknown node type!");
+    }
+}
+
+BaseNode::~BaseNode() {
+    destroy_node();
+}
 
 // VarNode methods
-
-VarNode::VarNode(const std::string& name, VarInfo* var_info) : DeclNode(name, var_info) {}
 
 void VarNode::setValue(int value) {
     VarInfo* var_info = static_cast<VarInfo*>(name_info_);
@@ -34,17 +90,14 @@ void VarNode::setValue(int value) {
 }
 
 int VarNode::processNode() {
-    // Nothing
     VarInfo* var_info = static_cast<VarInfo*>(name_info_);
     return var_info->value_;
 }
 
 // Binary Operation Node
 
-BinOpNode::BinOpNode(bin_op_type type, BaseNode* left, BaseNode* right) : type_ (type), left_ (left), right_ (right) {}
-
 #define CASE_BIN_OP(name, op)                                       \
-    case (name):                                                    \
+    case bin_op_type::name:                                         \
         return (left_->processNode() op right_->processNode());     \
 
 int BinOpNode::processNode() {
@@ -67,12 +120,12 @@ int BinOpNode::processNode() {
         CASE_BIN_OP(NEQUAL, !=);
         CASE_BIN_OP(L_AND, &&);
         CASE_BIN_OP(L_OR, ||);
-        case DIV:
+        case bin_op_type::DIV:
             value = right_->processNode();
             if (value == 0)
                 throw std::logic_error("Division by zero!");
             return left_->processNode() / value;
-        case ASSIGN:
+        case bin_op_type::ASSIGN:
             lvalue = static_cast<VarNode*>(left_);
             value = right_->processNode();
             lvalue->setValue(value);
@@ -83,27 +136,25 @@ int BinOpNode::processNode() {
 }
 
 BinOpNode::~BinOpNode() {
-    delete left_;
-    delete right_;
+    // delete left_;
+    // delete right_;
 }
 
 // Unary operation node
 
-UnOpNode::UnOpNode(un_op_type type, BaseNode* child) : type_ (type), child_ (child) {}
-
 int UnOpNode::processNode() {
     int value = 0;
     switch (type_) {
-        case U_PLUS:
+        case un_op_type::U_PLUS:
             return child_->processNode();
-        case U_MINUS:
+        case un_op_type::U_MINUS:
             return (-child_->processNode());
-        case NOT:
+        case un_op_type::NOT:
             return (!child_->processNode());
-        case INPUT:
+        case un_op_type::INPUT:
             std::cin >> value;
             return value;
-        case OUTPUT:
+        case un_op_type::OUTPUT:
             value = child_->processNode(); 
             std::cout << value << std::endl;
             return value;
@@ -113,18 +164,16 @@ int UnOpNode::processNode() {
 }
 
 UnOpNode::~UnOpNode() {
-    if (child_ != nullptr)
-        delete child_;
+    // if (child_ != nullptr)
+    //    delete child_;
 }
 
 // Scope node methods
 
-ScopeNode::ScopeNode(ScopeNode* prev) : prev_ (prev), table_ (new Symtab) {}
-
 int ScopeNode::processNode() {
     int result = 0;
 
-    for (auto node : instructions_) {
+    for (auto* node : instructions_) {
         // Commit each node
         result = node->processNode();
     }
@@ -140,8 +189,8 @@ void ScopeNode::insert(NameInfo* info, const std::string& name) {
     table_->insert(info, name);
 }
 
-NameInfo* ScopeNode::lookup(const std::string& name) {
-    ScopeNode* look_scope = this;
+NameInfo* ScopeNode::lookup(const std::string& name) const {
+    auto look_scope = this;
     NameInfo* info_p = nullptr;
 
     do {
@@ -158,26 +207,22 @@ void ScopeNode::addInstruction(BaseNode* node) {
     instructions_.push_back(node);
 }
 
-ScopeNode* ScopeNode::getPrevScope() {
-    return prev_;
-}
-
 ScopeNode::~ScopeNode() {
     delete table_;
 
-    for (auto node : instructions_)
+    for (auto* node : instructions_)
         delete node;
 }
 
 // IfNode methods
 
-IfNode::IfNode(BaseNode* cond, BaseNode* scope) : cond_ (cond), scope_ (scope) {}
-
 int IfNode::processNode() {
-    if (cond_->processNode())
-        scope_->processNode();
+    int res = 0;
 
-    return 0;
+    if (cond_->processNode())
+        res = scope_->processNode();
+
+    return res;
 }
 
 IfNode::~IfNode() {
@@ -186,8 +231,6 @@ IfNode::~IfNode() {
 }
 
 // While node methods
-
-WhileNode::WhileNode(BaseNode* cond, BaseNode* scope) : cond_ (cond), scope_ (scope) {}
 
 int WhileNode::processNode() {
     while (cond_->processNode())

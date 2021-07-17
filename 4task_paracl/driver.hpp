@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <memory>
 #include <FlexLexer.h>
 
 #include "Node.hpp"
@@ -23,7 +24,7 @@ namespace yy {
     };
 
     class Driver {
-        Scanner* plex_;
+        std::unique_ptr<Scanner> plex_;
         std::ifstream input_file_;
         std::vector<std::string> lines_; // all program lines to report errors
         const char* file_name_;

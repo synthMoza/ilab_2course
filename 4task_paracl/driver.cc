@@ -57,7 +57,8 @@ NameInfo* Driver::lookup(const std::string& name) const {
 }
 
 void Driver::addInstruction(BaseNode* node) const {
-    cur_scope_->addInstruction(node);
+    if (node != nullptr)
+        cur_scope_->addInstruction(node);
 }
 
 int Driver::launch() const {
@@ -124,7 +125,6 @@ Driver::~Driver() {
     input_file_.close();
 
     delete cur_scope_;
-    delete plex_;
 }
 
 // ASCI_Color methods

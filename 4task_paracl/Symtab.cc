@@ -4,16 +4,6 @@
 
 using namespace se;
 
-// NameInfo methods
-NameInfo::NameInfo(NameType type) : type_ (type) {}
-
-NameInfo::~NameInfo() {}
-
-// VarInfo methods
-VarInfo::VarInfo(int value) : value_ (value), NameInfo(VAR) {}
-
-VarInfo::VarInfo() : value_{}, NameInfo(VAR) {}
-
 // SymTab methods
 
 void Symtab::insert(NameInfo* info, const std::string& name) {
@@ -25,7 +15,7 @@ void Symtab::insert(NameInfo* info, const std::string& name) {
     table_[name] = info;
 }
 
-NameInfo* Symtab::lookup(const std::string& name) {
+NameInfo* Symtab::lookup(const std::string& name) const {
     auto info_it = table_.find(name);
     if (info_it == table_.end())
         return nullptr;

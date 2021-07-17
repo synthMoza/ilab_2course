@@ -7,53 +7,6 @@
 
 namespace se {
     /* Node structure that represents the basic class */
-    
-    // Traits for determing node by type
-    template <typename T, T U>
-    struct node_traits {};
-
-    template <>
-    struct node_traits<node_type, node_type::NUM> {
-        enum {value = node_type::NUM};
-        using type = NumNode*;
-    };
-
-    template <>
-    struct node_traits<node_type, node_type::VAR> {
-        enum {value = node_type::VAR};
-        using type = VarNode*;
-    };
-
-    template <>
-    struct node_traits<node_type, node_type::BIN_OP> {
-        enum {value = node_type::BIN_OP};
-        using type = BinOpNode*;
-    };
-
-    template <>
-    struct node_traits<node_type, node_type::UN_OP> {
-        enum {value = node_type::UN_OP};
-        using type = UnOpNode*;
-    };
-
-    template <>
-    struct node_traits<node_type, node_type::SCOPE> {
-        enum {value = node_type::SCOPE};
-        using type = ScopeNode*;
-    };
-
-    template <>
-    struct node_traits<node_type, node_type::IF> {
-        enum {value = node_type::IF};
-        using type = IfNode*;
-    };
-
-    template <>
-    struct node_traits<node_type, node_type::WHILE> {
-        enum {value = node_type::WHILE};
-        using type = WhileNode*;
-    };
-
 
     // Node type for more proper resource deleting
     enum class node_type {
@@ -66,8 +19,11 @@ namespace se {
         void destroy_node();
     public:
         BaseNode(node_type type) : type_ (type) {}
+        node_type getType() {
+            return type_;
+        }
         virtual int processNode() = 0;
-        ~BaseNode();
+        virtual ~BaseNode();
     };
 
     // Number node
@@ -99,9 +55,7 @@ namespace se {
         int processNode() override;
         void setValue(int value);
 
-        ~VarNode() {
-            std::cout << "~VarNode()" << std::endl;
-        }
+        ~VarNode() {}
     };
 
     // Binary operation node

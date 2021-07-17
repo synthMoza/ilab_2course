@@ -23,7 +23,7 @@ namespace se {
             return type_;
         }
         virtual int processNode() = 0;
-        virtual ~BaseNode();
+        virtual ~BaseNode() {}
     };
 
     // Number node
@@ -78,7 +78,7 @@ namespace se {
         BaseNode* getRightChild() {
             return right_;
         }
-        ~BinOpNode();
+        ~BinOpNode() {}
     };
 
     // Unary operation node

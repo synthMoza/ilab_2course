@@ -124,6 +124,7 @@ void Driver::report_parse_error(const parser::location_type& loc, error_type err
 Driver::~Driver() {
     input_file_.close();
 
+    // Delete all scopes
     delete cur_scope_;
 }
 

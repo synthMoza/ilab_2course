@@ -4,135 +4,7 @@
 
 using namespace se;
 
-// BaseNode methods
-
-BaseNode::~BaseNode() {}
-
-// VarNode methods
-
-void VarNode::setValue(int value) {
-    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
-    var_info->value_ = value;
-}
-
-int VarNode::processNode() {
-    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
-    return var_info->value_;
-}
-
-// Binary Operation Node
-
-#define CASE_BIN_OP(name, op)                                       \
-    case bin_op_type::name:                                         \
-        return (left_->processNode() op right_->processNode());     \
-
-int BinOpNode::processNode() {
-    if (left_ == nullptr || right_ == nullptr)
-        throw std::runtime_error("Unexpected null children!");
-    
-    int value = 0;
-    VarNode* lvalue = nullptr;
-    
-    switch (type_) {
-        CASE_BIN_OP(PLUS, +);
-        CASE_BIN_OP(MINUS, -);
-        CASE_BIN_OP(MUL, *);
-        CASE_BIN_OP(MOD, %);
-        CASE_BIN_OP(GR, >);
-        CASE_BIN_OP(GREQ, >=);
-        CASE_BIN_OP(LS, <);
-        CASE_BIN_OP(LSEQ, <);
-        CASE_BIN_OP(EQUAL, ==);
-        CASE_BIN_OP(NEQUAL, !=);
-        CASE_BIN_OP(L_AND, &&);
-        CASE_BIN_OP(L_OR, ||);
-        case bin_op_type::DIV:
-            value = right_->processNode();
-            if (value == 0)
-                throw std::logic_error("Division by zero!");
-            return left_->processNode() / value;
-        case bin_op_type::ASSIGN:
-            lvalue = static_cast<VarNode*>(left_);
-            value = right_->processNode();
-            lvalue->setValue(value);
-            return value;
-        default:
-            throw std::runtime_error("Unknown binary operation type!");
-    }
-}
-
-BinOpNode::~BinOpNode() {
-    // delete left_;
-    // delete right_;
-}
-
-// Unary operation node
-
-int UnOpNode::processNode() {
-    int value = 0;
-    switch (type_) {
-        case un_op_type::U_PLUS:
-            return child_->processNode();
-        case un_op_type::U_MINUS:
-            return (-child_->processNode());
-        case un_op_type::NOT:
-            return (!child_->processNode());
-        case un_op_type::INPUT:
-            std::cin >> value;
-            return value;
-        case un_op_type::OUTPUT:
-            value = child_->processNode(); 
-            std::cout << value << std::endl;
-            return value;
-        default:
-            throw std::runtime_error("Unknown unary operator type!");
-    }
-}
-
-UnOpNode::~UnOpNode() {
-    if (child_ != nullptr)
-       delete child_;
-}
-
-// Scope node methods
-
-int ScopeNode::processNode() {
-    int result = 0;
-
-    for (auto* node : instructions_) {
-        // Commit each node
-        result = node->processNode();
-    }
-
-    return result;
-}
-
-void ScopeNode::insert(NameInfo* info, const std::string& name) {
-    // If it already exists, runtime error while PARSING
-    if (table_ == nullptr)
-        throw std::runtime_error("Unexpected null symbol table!");
-    
-    table_->insert(info, name);
-}
-
-NameInfo* ScopeNode::lookup(const std::string& name) const {
-    auto look_scope = this;
-    NameInfo* info_p = nullptr;
-
-    do {
-        info_p = look_scope->table_->lookup(name);
-        if (info_p != nullptr)
-            return info_p;
-    } while ((look_scope = look_scope->prev_) != nullptr);
-
-
-    return nullptr;
-}
-
-void ScopeNode::addInstruction(BaseNode* node) {
-    instructions_.push_back(node);
-}
-
+// Static methods
 /* Helper functions for proper cleaning */
 static BaseNode* getLeftChild(BaseNode* node) {
     node_type type = node->getType();
@@ -191,6 +63,126 @@ static void delete_tree(BaseNode* node) {
             current = tmp;
         }
     }
+}
+
+// VarNode methods
+
+void VarNode::setValue(int value) {
+    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
+    var_info->value_ = value;
+}
+
+int VarNode::processNode() {
+    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
+    return var_info->value_;
+}
+
+// Binary Operation Node
+
+#define CASE_BIN_OP(name, op)                                       \
+    case bin_op_type::name:                                         \
+        return (left_->processNode() op right_->processNode());     \
+
+int BinOpNode::processNode() {
+    if (left_ == nullptr || right_ == nullptr)
+        throw std::runtime_error("Unexpected null children!");
+    
+    int value = 0;
+    VarNode* lvalue = nullptr;
+    
+    switch (type_) {
+        CASE_BIN_OP(PLUS, +);
+        CASE_BIN_OP(MINUS, -);
+        CASE_BIN_OP(MUL, *);
+        CASE_BIN_OP(MOD, %);
+        CASE_BIN_OP(GR, >);
+        CASE_BIN_OP(GREQ, >=);
+        CASE_BIN_OP(LS, <);
+        CASE_BIN_OP(LSEQ, <);
+        CASE_BIN_OP(EQUAL, ==);
+        CASE_BIN_OP(NEQUAL, !=);
+        CASE_BIN_OP(L_AND, &&);
+        CASE_BIN_OP(L_OR, ||);
+        case bin_op_type::DIV:
+            value = right_->processNode();
+            if (value == 0)
+                throw std::logic_error("Division by zero!");
+            return left_->processNode() / value;
+        case bin_op_type::ASSIGN:
+            lvalue = static_cast<VarNode*>(left_);
+            value = right_->processNode();
+            lvalue->setValue(value);
+            return value;
+        default:
+            throw std::runtime_error("Unknown binary operation type!");
+    }
+}
+
+// Unary operation node
+
+int UnOpNode::processNode() {
+    int value = 0;
+    switch (type_) {
+        case un_op_type::U_PLUS:
+            return child_->processNode();
+        case un_op_type::U_MINUS:
+            return (-child_->processNode());
+        case un_op_type::NOT:
+            return (!child_->processNode());
+        case un_op_type::INPUT:
+            std::cin >> value;
+            return value;
+        case un_op_type::OUTPUT:
+            value = child_->processNode(); 
+            std::cout << value << std::endl;
+            return value;
+        default:
+            throw std::runtime_error("Unknown unary operator type!");
+    }
+}
+
+UnOpNode::~UnOpNode() {
+    if (child_ != nullptr)
+       delete_tree(child_);
+}
+
+// Scope node methods
+
+int ScopeNode::processNode() {
+    int result = 0;
+
+    for (auto* node : instructions_) {
+        // Commit each node
+        result = node->processNode();
+    }
+
+    return result;
+}
+
+void ScopeNode::insert(NameInfo* info, const std::string& name) {
+    // If it already exists, runtime error while PARSING
+    if (table_ == nullptr)
+        throw std::runtime_error("Unexpected null symbol table!");
+    
+    table_->insert(info, name);
+}
+
+NameInfo* ScopeNode::lookup(const std::string& name) const {
+    auto look_scope = this;
+    NameInfo* info_p = nullptr;
+
+    do {
+        info_p = look_scope->table_->lookup(name);
+        if (info_p != nullptr)
+            return info_p;
+    } while ((look_scope = look_scope->prev_) != nullptr);
+
+
+    return nullptr;
+}
+
+void ScopeNode::addInstruction(BaseNode* node) {
+    instructions_.push_back(node);
 }
 
 ScopeNode::~ScopeNode() {

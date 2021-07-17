@@ -5,7 +5,7 @@
 %option yyclass="yy::Scanner"
 
 %{
-    #include "compiler.tab.hh"
+    #include "compiler.hh"
     #include "Scanner.hpp"
 
     #define YY_USER_ACTION updateLocation();

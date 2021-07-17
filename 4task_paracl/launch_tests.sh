@@ -6,12 +6,20 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 PURPLE='\033[0;35m'
-EXEC='out'
+EXEC=$1
 DIR='tests'
 
 count=0;
 count_success=0;
 count_failed=0;
+
+if [[ $1 -eq 0 ]] ; then
+    echo "Usage: ./launch_tests.sh <executable_file>"
+    exit 1
+fi
+
+EXEC=$1
+
 echo -e "-------------ParaCL Test Script-------------" 
 for file in tests/*.test; do
 	filename=$(basename -- "$file")

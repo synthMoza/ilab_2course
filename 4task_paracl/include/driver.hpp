@@ -10,7 +10,7 @@
 
 #include "Node.hpp"
 #include "Scanner.hpp"
-#include "compiler.tab.hh"
+#include "compiler.hh"
 
 namespace yy {
     using se::BaseNode;

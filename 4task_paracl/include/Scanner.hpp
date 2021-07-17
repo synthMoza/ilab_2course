@@ -4,7 +4,7 @@
 #include <FlexLexer.h>
 #endif
 
-#include "compiler.tab.hh"
+#include "compiler.hh"
 
 namespace yy {
     // Own lexer class with methods for determing and updating location

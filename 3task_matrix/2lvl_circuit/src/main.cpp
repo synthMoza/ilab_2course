@@ -1,21 +1,12 @@
 #include "matrix.h"
 
 #include <iostream>
+#include <gtest/gtest.h>
 
 using namespace se;
 
-int main() {
-	try {
-		Matrix<float> A(3, 3);
+int main(int argc, char* argv[]) {
+	Matrix<int> A(100, 100);
 
-		std::cin >> A;
-		A ^= 2;
-		std::cout << A;
-	} catch (std::exception& e) {
-		std::cerr << "Caught exception: ";
-		std::cerr << e.what() << std::endl;
-		return 1;
-	}
-
-	return 0;
+	// return 0;
 }

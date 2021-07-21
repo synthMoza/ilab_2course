@@ -1,12 +1,15 @@
-cmake_minimum_required(VERSION 2.6)
-
+cmake_minimum_required(VERSION 3.10)
 project(circuit)
+
+set(CMAKE_CXX_STANDART 11)
 
 set(SRC_DIR src)
 set(INCLUDE_DIR include)
-
-set(SRC ${SRC_DIR}/main.cpp)
-set(HEADERS ${INCLUDE_DIR}/buf.h ${INCLUDE_DIR}/matrix.h ${INCLUDE_DIR}/matrixbuf.h)
+set(TEST_DIR test)
+set(GTEST_DIR lib/googletest)
 
 include_directories(${INCLUDE_DIR})
-add_executable(${PROJECT_NAME} ${SRC})
+
+add_subdirectory(${SRC_DIR})
+add_subdirectory(${TEST_DIR})
+add_subdirectory(${GTEST_DIR})

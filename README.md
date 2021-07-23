@@ -1,7 +1,7 @@
 # iLab 2 course
 All problems I have managed to solve during iLab on second course of learning in MIPT. Each task includes C++ code, Makefile and unit tests.
 
-| Problem     | Solved level  |
+| Problem     | Last solved level  |
 | ----------- | ------------- |
 | Cache       | 1             |
 | Triangles   | 1             |

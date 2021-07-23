@@ -1,0 +1,14 @@
+input = ?;
+
+sum = 0;
+sqr = 0;
+
+while (input != 0) {
+	sum = sum + input;
+	sqr = input * input;
+	print sqr; 
+
+	input = ?;
+}
+
+print sum;

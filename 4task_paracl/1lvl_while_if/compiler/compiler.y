@@ -24,7 +24,6 @@
     using namespace se;
 
     namespace yy {
-
         parser::token_type yylex(parser::semantic_type* yylval, parser::location_type* l, Driver* driver);
     }
 }

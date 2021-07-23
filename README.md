@@ -1,5 +1,5 @@
 # iLab 2 course
-All problems I have managed to solve during iLab on second course of learning in MIPT. Each task includes C++ code, Makefile and unit tests.
+All problems I have managed to solve during iLab on second course of learning in MIPT.
 
 | Problem     | Last solved level  |
 | ----------- | ------------- |

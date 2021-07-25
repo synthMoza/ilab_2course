@@ -15,7 +15,6 @@
     #include <memory>
 
     #include "Node.hpp"
-    #include "Symtab.hpp"
 
     // Forward declaration of argument for the parser
     namespace yy { class Driver; }
@@ -89,13 +88,6 @@
 %nterm <se::BaseNode*>              cl_scope;
 %nterm <se::BaseNode*>              instr;          // instruction
 
-%nterm <std::vector<se::BaseNode*>> args_val;       // arguments by value
-%nterm <std::vector<std::string>>   args_br;
-%nterm <std::vector<std::string>>   args;           // collect args for the function
-%nterm <std::shared_ptr<se::FuncInfo>>              func_decl;      // function declaration
-%nterm <std::shared_ptr<se::FuncInfo>>              func_decl_name;
-%nterm <std::shared_ptr<se::FuncInfo>>              named_func;
-
 %nterm <se::BaseNode*>              assign;         // assignment that can be interpreted as expression
 %nterm <se::BaseNode*>              assign_1;       // divide for assigning inside expressions (without scolon)
 %nterm <se::BaseNode*>              assign_2;
@@ -104,6 +96,13 @@
 %nterm <se::BaseNode*>              op_body;
 %nterm <se::BaseNode*>              cl_body;
 
+%nterm <std::vector<se::BaseNode*>>                 args_val;       // arguments by value
+%nterm <std::vector<std::string>>                   args_br;
+%nterm <std::vector<std::string>>                   args;           // collect args for the function
+
+%nterm <std::shared_ptr<se::FuncInfo>>              func_decl;      // function declaration
+%nterm <std::shared_ptr<se::FuncInfo>>              func_decl_name;
+%nterm <std::shared_ptr<se::FuncInfo>>              named_func;
 
 %left '+' '-'
 %left '*' '/'
@@ -118,6 +117,9 @@ program: instr                          {
 ;
 
 instr: line                             {
+                                            driver->addInstruction($1);
+                                        }
+| scope                                 {
                                             driver->addInstruction($1);
                                         }
 | instr line                            {   
@@ -164,7 +166,7 @@ assign_1: NAME ASSIGN lgc_or            {
                                             VarNode* var_node = new VarNode($1, var_info);
                                             $$ = new BinOpNode(bin_op_type::ASSIGN, var_node, $3);
                                         }
-| NAME ASSIGN QMARK                   {
+| NAME ASSIGN QMARK                     {
                                             // Assign operator with input value
                                             auto name_info = driver->lookup($1);
 
@@ -211,7 +213,7 @@ assign_2: NAME ASSIGN scope             {
                                             VarNode* var_node = new VarNode($1, var_info);
                                             $$ = new BinOpNode(bin_op_type::ASSIGN, var_node, $3);
                                         }
-| NAME ASSIGN func_decl               {
+| NAME ASSIGN func_decl                 {
                                             // Check if this name already exists
                                             auto name_info = driver->lookup($1);
                                             if (name_info != nullptr) {
@@ -257,17 +259,17 @@ cl_body:                                {
                                         }
 ;
 
-func_decl: KW_FUNC op_body args_br body cl_body                     {
-                                                                        // Create function info structure
-                                                                        $$ = std::shared_ptr<FuncInfo>(new FuncInfo($5, std::move($3)));
-                                                                    }
+func_decl: KW_FUNC op_body args_br body cl_body     {
+                                                        // Create function info structure
+                                                        $$ = std::shared_ptr<FuncInfo>(new FuncInfo($5, std::move($3)));
+                                                    }
 ;
 
-func_decl_name: KW_FUNC named_func body cl_body                     {   
-                                                                        // Create function info structure
-                                                                        $2->setBody($4);
-                                                                        $$ = $2;                                        
-                                                                    }
+func_decl_name: KW_FUNC named_func body cl_body     {   
+                                                        // Create function info structure
+                                                        $2->setBody($4);
+                                                        $$ = $2;                                        
+                                                    }
 ;
 
 named_func: op_body args_br COLON NAME  {

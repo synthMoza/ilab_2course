@@ -1,0 +1,11 @@
+foo = func(x) {
+	res = 0;
+	if (x % 2 == 0)
+		return res;
+
+	res = x * x;
+	res;
+};
+
+print foo(4);
+print foo(5);

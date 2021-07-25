@@ -19,7 +19,7 @@ void FuncInfo::release() {
 
 // SymTab methods
 
-void Symtab::dump() {
+void Symtab::dump() const {
     std::cout << "Dump Symtab, address = " << this << std::endl;
     
     int i = 0;

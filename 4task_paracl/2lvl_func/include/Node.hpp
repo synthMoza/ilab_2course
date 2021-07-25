@@ -8,22 +8,23 @@
 namespace se {
     /* Node structure that represents the basic class */
 
-    // Node type for more proper resource deleting
+    // Node type for proper resource deleting
     enum class node_type {
         NUM, DECL, VAR, BIN_OP, UN_OP, SCOPE, IF, WHILE, RET
     };
     
     class BaseNode {
         node_type type_;
+
         // Helper function for proper memory deallocation
         void destroy_node();
     public:
         BaseNode(node_type type) : type_ (type) {}
-        node_type getType() {
+        node_type getType() const {
             return type_;
         }
         virtual int processNode() = 0;
-        virtual ~BaseNode() {}
+        virtual ~BaseNode() = default;
     };
 
     // Number node
@@ -34,7 +35,7 @@ namespace se {
         int processNode() override {
             return value_;
         }
-        ~NumNode() {}
+        ~NumNode() = default;
     };
 
     // Declaration node
@@ -121,19 +122,19 @@ namespace se {
         ScopeNode(ScopeNode* prev) : 
             BaseNode(node_type::SCOPE), prev_ (prev), table_ (new Symtab) {}
 
-        void dump() {
+        void erase_name(const std::string& name) {
+            table_->erase_name(name);
+        }
+        void dump() const {
             table_->dump();
         }
-
+        
         // Wrappers for symbol table methods
         void clear() {
             table_->clear();
         }
         void insert(std::shared_ptr<NameInfo> info, const std::string& name);
         std::shared_ptr<NameInfo> lookup(const std::string& name) const;
-        void erase_name(const std::string& name) {
-            table_->erase_name(name);
-        }
         // Insert new instruction
         void addInstruction(BaseNode* node);
         // Get the previous scope

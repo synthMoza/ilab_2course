@@ -58,7 +58,7 @@ namespace se {
             table_.clear();
         }
         // Check all the elements in the table
-        void dump();
+        void dump() const;
         void insert(std::shared_ptr<NameInfo> info, const std::string& name);
         std::shared_ptr<NameInfo> lookup(const std::string& name) const;
         void erase_name(const std::string& name) {

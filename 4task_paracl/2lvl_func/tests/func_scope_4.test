@@ -1,0 +1,14 @@
+a = ?;
+b = ?;
+
+{
+	{
+		{
+			sum = func(a, b) : summarize {
+				a + b;
+			};
+		}
+	}
+
+	print sum(a, b);
+}

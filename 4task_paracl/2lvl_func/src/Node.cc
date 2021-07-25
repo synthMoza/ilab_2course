@@ -5,8 +5,8 @@
 
 using namespace se;
 
-// Static methods
-/* Helper functions for proper cleaning */
+// Static methods (destroy tree iteratively)
+
 static BaseNode* getLeftChild(BaseNode* node) {
     node_type type = node->getType();
     
@@ -36,7 +36,7 @@ static BaseNode* getRightChild(BaseNode* node) {
         return nullptr;
 }
 
-// Static function for deleting the whole tree using stack (used in ScopeNode, WhileNode, IfNode, ...)
+// Static function for deleting the whole tree (used in ScopeNode, WhileNode, IfNode, ...)
 static void delete_tree(BaseNode* node) {
     node_type type;
     

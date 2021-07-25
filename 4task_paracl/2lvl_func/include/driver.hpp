@@ -31,30 +31,33 @@ namespace yy {
         const char* file_name_;
         ScopeNode* global_scope_; // global scope of the program
         ScopeNode* cur_scope_; // curent program scope (global scope by default)
-        std::stack<ScopeNode*> saved_scopes_; // save last scope in case it was changed to some new unrelated (like function scope) 
+        std::stack<ScopeNode*> saved_scopes_; // save last scope in case it was changed to some unrelated like function one
     public:
-        void dumpScope() {
+        // Dump the current scope to stdout
+        void dumpScope() const {
             cur_scope_->dump();
         }
 
-        // Handle scope
+        // Get current scope
         ScopeNode* getScope() const {
             return cur_scope_;
         }
+        // Change current scope to the given one
         void setScope(ScopeNode* scope) {
             cur_scope_ = scope;
         }
-        // Handle saved scope
+        // Change current scope to the given one, but save the current one in stack
         void setTempScope(ScopeNode* scope) {
             saved_scopes_.push(cur_scope_);
             cur_scope_ = scope;
         }
+        // Set the last saved scope as the current one
         void resetScope() {
             cur_scope_ = saved_scopes_.top();
             saved_scopes_.pop();
         }
         // Returns true if there are saved scopes (we are inside function), else false
-        bool mayReturn() {
+        bool mayReturn() const {
             return !saved_scopes_.empty();
         }
 
@@ -68,17 +71,27 @@ namespace yy {
         void erase_name(const std::string& name) {
             cur_scope_->erase_name(name);
         }
-        void insert(std::shared_ptr<NameInfo> info, const std::string& name);
-        std::shared_ptr<NameInfo> lookup(const std::string& name) const;
-        void insertGlobal(std::shared_ptr<NameInfo> info, const std::string& name);
-        std::shared_ptr<NameInfo> lookupGlobal(const std::string& name) const;
-        void erase_name_global(const std::string& name) {
+        void erase_global_name(const std::string& name) {
             global_scope_->erase_name(name);
+        }
+        void insert(std::shared_ptr<NameInfo> info, const std::string& name) {
+            cur_scope_->insert(info, name);
+        }
+        std::shared_ptr<NameInfo> lookup(const std::string& name) const {
+            return cur_scope_->lookup(name);
+        }
+        void insertGlobal(std::shared_ptr<NameInfo> info, const std::string& name) {
+            global_scope_->insert(info, name);
+        }
+        std::shared_ptr<NameInfo> lookupGlobal(const std::string& name) const {
+            return global_scope_->lookup(name);
         }
 
         void addInstruction(BaseNode* node) const;
         // Launch the program
-        int launch() const;
+        int launch() const {
+            return cur_scope_->processNode();
+        }
         // Error handling
         void report_syntax_error(parser::context const& ctx) const;
         void report_error_position(const parser::location_type& loc) const;

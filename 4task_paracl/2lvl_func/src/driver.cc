@@ -49,29 +49,9 @@ bool Driver::parse() {
     return !res;
 }
 
-void Driver::insert(std::shared_ptr<NameInfo>info, const std::string& name) {
-    cur_scope_->insert(info, name);
-}
-
-void Driver::insertGlobal(std::shared_ptr<NameInfo> info, const std::string& name) {
-    global_scope_->insert(info, name);
-}
-
-std::shared_ptr<NameInfo> Driver::lookup(const std::string& name) const {
-    return cur_scope_->lookup(name);
-}
-
-std::shared_ptr<NameInfo> Driver::lookupGlobal(const std::string& name) const {
-    return global_scope_->lookup(name);
-}
-
 void Driver::addInstruction(BaseNode* node) const {
     if (node != nullptr)
         cur_scope_->addInstruction(node);
-}
-
-int Driver::launch() const {
-    return cur_scope_->processNode();
 }
 
 void Driver::report_syntax_error(yy::parser::context const& ctx) const {

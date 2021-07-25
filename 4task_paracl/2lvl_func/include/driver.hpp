@@ -21,7 +21,7 @@ namespace yy {
 
     // Runtime error types (during parsing)
     enum error_type {
-        ER_UNDEFINED_NAME, ER_WRONG_ARGS
+        ER_UNDEFINED_NAME, ER_WRONG_ARGS, ER_WRONG_RET, ER_TAKEN_NAME
     };
 
     class Driver {
@@ -29,10 +29,14 @@ namespace yy {
         std::ifstream input_file_;
         std::vector<std::string> lines_; // all program lines to report errors
         const char* file_name_;
+        ScopeNode* global_scope_; // global scope of the program
         ScopeNode* cur_scope_; // curent program scope (global scope by default)
         std::stack<ScopeNode*> saved_scopes_; // save last scope in case it was changed to some new unrelated (like function scope) 
     public:
-        
+        void dumpScope() {
+            cur_scope_->dump();
+        }
+
         // Handle scope
         ScopeNode* getScope() const {
             return cur_scope_;
@@ -49,6 +53,10 @@ namespace yy {
             cur_scope_ = saved_scopes_.top();
             saved_scopes_.pop();
         }
+        // Returns true if there are saved scopes (we are inside function), else false
+        bool mayReturn() {
+            return !saved_scopes_.empty();
+        }
 
         Driver(const char* file_name);
 
@@ -57,8 +65,17 @@ namespace yy {
         // Parse the input code
         bool parse();
         // Wrappers for scope node methods
-        void insert(NameInfo* info, const std::string& name);
-        NameInfo* lookup(const std::string& name) const;
+        void erase_name(const std::string& name) {
+            cur_scope_->erase_name(name);
+        }
+        void insert(std::shared_ptr<NameInfo> info, const std::string& name);
+        std::shared_ptr<NameInfo> lookup(const std::string& name) const;
+        void insertGlobal(std::shared_ptr<NameInfo> info, const std::string& name);
+        std::shared_ptr<NameInfo> lookupGlobal(const std::string& name) const;
+        void erase_name_global(const std::string& name) {
+            global_scope_->erase_name(name);
+        }
+
         void addInstruction(BaseNode* node) const;
         // Launch the program
         int launch() const;

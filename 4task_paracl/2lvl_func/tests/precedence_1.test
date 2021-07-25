@@ -1,3 +1,0 @@
-input = ?;
-
-print !(input - 4 / 2 * 5 == 0 && input != 2 + 2 % 2);

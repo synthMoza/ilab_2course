@@ -51,6 +51,7 @@ SYMBD   [a-zA-Z0-9_]
 "return"            return yy::parser::token_type::KW_RET;
 
 "="                 return yy::parser::token_type::ASSIGN;
+":"                 return yy::parser::token_type::COLON;
 ";"                 return yy::parser::token_type::SCOLON;
 ","                 return yy::parser::token_type::COMMA;
 

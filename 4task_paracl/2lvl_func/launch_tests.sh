@@ -13,7 +13,7 @@ count=0;
 count_success=0;
 count_failed=0;
 
-if [[ $1 -eq 0 ]] ; then
+if [ -z $1 ] ; then
     echo "Usage: ./launch_tests.sh <executable_file>"
     exit 1
 fi
@@ -33,7 +33,7 @@ for file in tests/*.test; do
     
     # Launch the test with this input
     >$output; # clear the output file
-	./$EXEC $file < "$input_file_name" > $output
+	valgrind --leak-check=full ./$EXEC $file < "$input_file_name" > $output
 	# Check the output
 	if cmp -s "$output" "$output_file_name"; then
 		echo -e "[RESULT] \t ${GREEN} SUCCESS ${NC}"

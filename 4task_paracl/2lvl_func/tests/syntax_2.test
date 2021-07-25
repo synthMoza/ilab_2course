@@ -1,5 +1,0 @@
-input = ?;
-
-while (input > 0) {
-	print if;
-}

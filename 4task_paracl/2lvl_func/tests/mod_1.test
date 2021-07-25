@@ -1,5 +1,0 @@
-input = ?;
-
-if ((input % 2 == 0) && (input % 3 == 0)) {
-	print input;
-}

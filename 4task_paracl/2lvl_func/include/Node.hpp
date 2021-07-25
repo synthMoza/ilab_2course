@@ -10,7 +10,7 @@ namespace se {
 
     // Node type for more proper resource deleting
     enum class node_type {
-        NUM, DECL, VAR, BIN_OP, UN_OP, SCOPE, IF, WHILE
+        NUM, DECL, VAR, BIN_OP, UN_OP, SCOPE, IF, WHILE, RET
     };
     
     class BaseNode {
@@ -41,9 +41,9 @@ namespace se {
     class DeclNode : public BaseNode {
     protected:
         std::string name_;
-        NameInfo* name_info_;
+        std::shared_ptr<NameInfo> name_info_;
     public:
-        DeclNode(const std::string& name, NameInfo* name_info, node_type type = node_type::DECL) : 
+        DeclNode(const std::string& name, std::shared_ptr<NameInfo> name_info, node_type type = node_type::DECL) : 
             BaseNode(type), name_ (name), name_info_ (name_info) {}
         virtual ~DeclNode() = default;
     };
@@ -51,26 +51,23 @@ namespace se {
     // Variable node that inherits from DeclNode and has the "setValue()" method
     class VarNode final : public DeclNode {
     public:
-        VarNode(const std::string& name, VarInfo* var_info) : DeclNode(name, var_info, node_type::VAR) {}
+        VarNode(const std::string& name, std::shared_ptr<VarInfo> var_info) : DeclNode(name, var_info, node_type::VAR) {}
         int processNode() override;
         void setValue(int value);
 
         ~VarNode() = default;
     };
-    
+
     // Function node that contains its body as a pointer to scope node
     class FuncNode final : public DeclNode {
         std::vector<BaseNode*> args_;
     public:
-        FuncNode(const std::string& name, FuncInfo* func_info, std::vector<BaseNode*> args) 
+        FuncNode(const std::string& name, std::shared_ptr<FuncInfo> func_info, std::vector<BaseNode*> args) 
             : DeclNode(name, func_info), args_ (args) {}
 
         int processNode() override;
 
-        ~FuncNode() {
-            for (auto* arg : args_)
-                delete arg;
-        }
+        ~FuncNode();
     };
 
     // Binary operation node
@@ -124,12 +121,19 @@ namespace se {
         ScopeNode(ScopeNode* prev) : 
             BaseNode(node_type::SCOPE), prev_ (prev), table_ (new Symtab) {}
 
+        void dump() {
+            table_->dump();
+        }
+
         // Wrappers for symbol table methods
-        void clearTable() {
+        void clear() {
             table_->clear();
         }
-        void insert(NameInfo* info, const std::string& name);
-        NameInfo* lookup(const std::string& name) const;
+        void insert(std::shared_ptr<NameInfo> info, const std::string& name);
+        std::shared_ptr<NameInfo> lookup(const std::string& name) const;
+        void erase_name(const std::string& name) {
+            table_->erase_name(name);
+        }
         // Insert new instruction
         void addInstruction(BaseNode* node);
         // Get the previous scope
@@ -165,5 +169,29 @@ namespace se {
         int processNode() override;
 
         ~WhileNode();
+    };
+
+    // Exception-wrapper for return codes inside functions 
+    class ret_exception {
+        int code_;
+    public:
+        ret_exception(int code) : code_ (code) {}
+        const int& get() const {
+            return code_;
+        }
+    };
+
+    // Return node for functions to return value any time
+    class RetNode final : public BaseNode {
+        BaseNode* expression_;
+    public:
+        RetNode(BaseNode* expression) : BaseNode(node_type::RET), expression_ (expression) {}
+        int processNode() override {
+            throw ret_exception(expression_->processNode());
+        }
+
+        ~RetNode() {
+            delete expression_;
+        }
     };
 }

@@ -1,9 +1,0 @@
-a = ?;
-
-if (a % 2 == 0)
-	print a;
-
-while (a > 0)
-	a = a - 3;
-
-print a;

@@ -1,0 +1,13 @@
+fact = func(x) : factorial {
+  res = 1;
+  if (x > 0)
+    res = x * factorial(x - 1);
+  
+  return res;
+}
+
+input = ?;
+while (input > 0) {
+  print fact(input);
+  input = ?;
+}

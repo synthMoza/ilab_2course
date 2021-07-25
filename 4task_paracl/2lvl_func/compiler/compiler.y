@@ -12,6 +12,7 @@
 {
     #include <vector>
     #include <string>
+    #include <memory>
 
     #include "Node.hpp"
     #include "Symtab.hpp"
@@ -64,6 +65,7 @@
     KW_RET      "return"    // return from function
 
     SCOLON      ";"
+    COLON       ":"
     COMMA       ","         // function arguments
     ERR
 ;
@@ -87,11 +89,12 @@
 %nterm <se::BaseNode*>              cl_scope;
 %nterm <se::BaseNode*>              instr;          // instruction
 
-%nterm <std::string>                lvalue;
 %nterm <std::vector<se::BaseNode*>> args_val;       // arguments by value
 %nterm <std::vector<std::string>>   args_br;
 %nterm <std::vector<std::string>>   args;           // collect args for the function
-%nterm <se::FuncInfo*>              func_decl;      // function declaration
+%nterm <std::shared_ptr<se::FuncInfo>>              func_decl;      // function declaration
+%nterm <std::shared_ptr<se::FuncInfo>>              func_decl_name;
+%nterm <std::shared_ptr<se::FuncInfo>>              named_func;
 
 %nterm <se::BaseNode*>              assign;         // assignment that can be interpreted as expression
 %nterm <se::BaseNode*>              assign_1;       // divide for assigning inside expressions (without scolon)
@@ -141,61 +144,93 @@ cl_scope: RCBR                          {
                                         }
 ;
 
-lvalue: NAME                            {
-                                            NameInfo* name_info = driver->lookup($1);
+assign_1: NAME ASSIGN lgc_or            {
+                                            // Assign operator
+                                            auto name_info = driver->lookup($1);
+                                            std::shared_ptr<VarInfo> var_info = nullptr;
+
                                             if (name_info == nullptr) {
                                                 // Declare this variable
-                                                VarInfo* var_info = new VarInfo;
+                                                var_info = std::shared_ptr<VarInfo>(new VarInfo);
                                                 driver->insert(var_info, $1);
-                                            }
-                                            
-                                            // Return its name, inserted into driver
-                                            $$ = $1;
-                                        }
-;
+                                            } else if (name_info->type_ != NameType::VAR) {
+                                                // Redeclare as a variable
+                                                driver->erase_name($1);
+                                                var_info = std::shared_ptr<VarInfo>(new VarInfo);
+                                                driver->insert(var_info, $1);
+                                            } else
+                                                var_info = std::static_pointer_cast<VarInfo>(driver->lookup($1));
 
-assign_1: lvalue ASSIGN lgc_or          {
-                                            // Assign operator
-                                            NameInfo* name_info = driver->lookup($1);
-                                            if (name_info->type_ != NameType::VAR)
-                                                throw std::runtime_error("Unexpected lvalue name type!");
-                                            VarInfo* var_info = static_cast<VarInfo*>(name_info);
                                             VarNode* var_node = new VarNode($1, var_info);
-
                                             $$ = new BinOpNode(bin_op_type::ASSIGN, var_node, $3);
                                         }
-| lvalue ASSIGN QMARK                   {
+| NAME ASSIGN QMARK                   {
                                             // Assign operator with input value
-                                            NameInfo* name_info = driver->lookup($1);
-                                            if (name_info->type_ != NameType::VAR)
-                                                throw std::runtime_error("Unexpected lvalue name type!");
-                                            VarInfo* var_info = static_cast<VarInfo*>(name_info);
-                                            VarNode* var_node = new VarNode($1, var_info);
+                                            auto name_info = driver->lookup($1);
 
+                                            std::shared_ptr<VarInfo> var_info = nullptr;
+                                            if (name_info == nullptr) {
+                                                // Declare this variable
+                                                var_info = std::shared_ptr<VarInfo>(new VarInfo);
+                                                driver->insert(var_info, $1);
+                                                name_info = driver->lookup($1);
+                                            } else if (name_info->type_ != NameType::VAR) {
+                                                // Redeclare as a variable
+                                                driver->erase_name($1);
+                                                var_info = std::shared_ptr<VarInfo>(new VarInfo);
+                                                driver->insert(var_info, $1);
+                                                name_info = driver->lookup($1);
+                                            } else
+                                                var_info = std::static_pointer_cast<VarInfo>(driver->lookup($1));
+                                            
+                                            VarNode* var_node = new VarNode($1, var_info);
                                             UnOpNode* input = new UnOpNode(un_op_type::INPUT, nullptr);
                                             $$ = new BinOpNode(bin_op_type::ASSIGN, var_node, input);
                                         }
 ;
 
-assign_2: lvalue ASSIGN scope           {
+assign_2: NAME ASSIGN scope             {
                                             // Assign to scope
-                                            NameInfo* name_info = driver->lookup($1);
-                                            if (name_info->type_ != NameType::VAR)
-                                                throw std::runtime_error("Unexpected lvalue name type!");
-                                            VarInfo* var_info = static_cast<VarInfo*>(name_info);
-                                            VarNode* var_node = new VarNode($1, var_info);
+                                            auto name_info = driver->lookup($1);
 
+                                            std::shared_ptr<VarInfo> var_info = nullptr;
+                                            if (name_info == nullptr) {
+                                                // Declare this variable
+                                                var_info = std::shared_ptr<VarInfo>(new VarInfo);
+                                                driver->insert(var_info, $1);
+                                                name_info = driver->lookup($1);
+                                            } else if (name_info->type_ != NameType::VAR) {
+                                                // Redeclare as a variable
+                                                driver->erase_name($1);
+                                                var_info = std::shared_ptr<VarInfo>(new VarInfo);
+                                                driver->insert(var_info, $1);
+                                                name_info = driver->lookup($1);
+                                            } else
+                                                var_info = std::static_pointer_cast<VarInfo>(driver->lookup($1));
+                                            
+                                            VarNode* var_node = new VarNode($1, var_info);
                                             $$ = new BinOpNode(bin_op_type::ASSIGN, var_node, $3);
                                         }
-| lvalue ASSIGN func_decl               {
+| NAME ASSIGN func_decl               {
                                             // Check if this name already exists
-                                            NameInfo* name_info = driver->lookup($1);
+                                            auto name_info = driver->lookup($1);
                                             if (name_info != nullptr) {
-                                                // Variable exists, rewrite its info
-                                                delete name_info;
+                                                // Redeclare this object as this function
+                                                driver->erase_name($1);
                                             }
 
                                             // Insert function declaration into the driver
+                                            driver->insert($3, $1);
+                                        }
+| NAME ASSIGN func_decl_name            {
+                                            // Check if local name already exists
+                                            auto name_info = driver->lookup($1);
+                                            if (name_info != nullptr) {
+                                                // Redeclare this object as this function
+                                                driver->erase_name($1);
+                                            }
+
+                                            // Insert local name
                                             driver->insert($3, $1);
                                         }
 ;
@@ -222,17 +257,42 @@ cl_body:                                {
                                         }
 ;
 
-func_decl: KW_FUNC op_body args_br body cl_body  {
-                                            // Create function info structure
-                                            $$ = new FuncInfo($5, std::move($3));
+func_decl: KW_FUNC op_body args_br body cl_body                     {
+                                                                        // Create function info structure
+                                                                        $$ = std::shared_ptr<FuncInfo>(new FuncInfo($5, std::move($3)));
+                                                                    }
+;
+
+func_decl_name: KW_FUNC named_func body cl_body                     {   
+                                                                        // Create function info structure
+                                                                        $2->setBody($4);
+                                                                        $$ = $2;                                        
+                                                                    }
+;
+
+named_func: op_body args_br COLON NAME  {
+                                            // Check global name
+                                            auto name_info = driver->lookup($4);
+                                            if (name_info != nullptr) {
+                                                // Run-time error, function with this name already exists
+                                                driver->report_parse_error(@4, ER_TAKEN_NAME);
+                                                throw std::runtime_error("Compilation failed!");
+                                            }
+
+                                            // Declare this name in the global scope
+                                            auto func_info = std::shared_ptr<FuncInfo>(new FuncInfo);
+                                            func_info->setArgs(std::move($2));
+
+                                            driver->insertGlobal(func_info, $4);
+                                            $$ = func_info;
                                         }
 ;
 
 args_br: LRBR args RRBR                 {   
-                                            VarInfo* var_info = nullptr;
+                                            std::shared_ptr<VarInfo> var_info = nullptr;
                                             for (auto&& arg : $2) {
                                                 // Declare variables in function scope
-                                                var_info = new VarInfo;
+                                                var_info = std::shared_ptr<VarInfo>(new VarInfo);
                                                 driver->insert(var_info, arg);
                                             }
 
@@ -279,6 +339,15 @@ line: SCOLON                            {
 | KW_WHILE LRBR lgc_or RRBR block       {
                                             // Loop operator
                                             $$ = new WhileNode($3, $5);
+                                        }
+| KW_RET lgc_or SCOLON                  {
+                                            if (!driver->mayReturn()) {
+                                                // Run-time error, return can be used only in functions
+                                                driver->report_parse_error(@1, ER_WRONG_RET);
+                                                throw std::runtime_error("Compilation failed!");
+                                            }
+
+                                            $$ = new RetNode($2);
                                         }
 ;
 
@@ -392,23 +461,29 @@ expr3: NUMBER                           {
                                             $$ = $2;
                                         }
 | NAME                                  {
-                                            VarInfo* var_info = static_cast<VarInfo*>(driver->lookup($1));
+                                            auto var_info = std::static_pointer_cast<VarInfo>(driver->lookup($1));
                                             if (var_info == nullptr) {
                                                 // Run-time error
                                                 driver->report_parse_error(@1, ER_UNDEFINED_NAME);
                                                 throw std::runtime_error("Compilation failed!");
                                             }
-
+                                            
                                             $$ = new VarNode($1, var_info);
                                         }
 | NAME LRBR args_val RRBR               {
-                                            FuncInfo* func_info = static_cast<FuncInfo*>(driver->lookup($1));
+                                            auto func_info = std::static_pointer_cast<FuncInfo>(driver->lookup($1));
                                             if (func_info == nullptr) {
-                                                // Run-time error, can't resolve this name
-                                                driver->report_parse_error(@1, ER_UNDEFINED_NAME);
-                                                throw std::runtime_error("Compilation failed!");
+                                                // Look for this function in global namespace
+                                                func_info = std::static_pointer_cast<FuncInfo>(driver->lookupGlobal($1));
+                                                
+                                                if (func_info == nullptr) {
+                                                    // Run-time error, can't resolve this name
+                                                    driver->report_parse_error(@1, ER_UNDEFINED_NAME);
+                                                    throw std::runtime_error("Compilation failed!");
+                                                }
                                             }
 
+        
                                             if (func_info->args_.size() != $3.size()) {
                                                 // Run-time error, wrong argument number
                                                 driver->report_parse_error(@3, ER_WRONG_ARGS);

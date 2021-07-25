@@ -6,7 +6,8 @@ using namespace yy;
 
 // Driver methods
 
-Driver::Driver(const char* file_name) : cur_scope_ (new ScopeNode(nullptr)), plex_ (new Scanner), file_name_ (file_name) {
+Driver::Driver(const char* file_name) : plex_ (new Scanner), file_name_ (file_name), 
+    global_scope_ (new ScopeNode(nullptr)), cur_scope_ (global_scope_) {
     // Open the input file
     input_file_.open(file_name);
 
@@ -48,12 +49,20 @@ bool Driver::parse() {
     return !res;
 }
 
-void Driver::insert(NameInfo* info, const std::string& name) {
+void Driver::insert(std::shared_ptr<NameInfo>info, const std::string& name) {
     cur_scope_->insert(info, name);
 }
 
-NameInfo* Driver::lookup(const std::string& name) const {
+void Driver::insertGlobal(std::shared_ptr<NameInfo> info, const std::string& name) {
+    global_scope_->insert(info, name);
+}
+
+std::shared_ptr<NameInfo> Driver::lookup(const std::string& name) const {
     return cur_scope_->lookup(name);
+}
+
+std::shared_ptr<NameInfo> Driver::lookupGlobal(const std::string& name) const {
+    return global_scope_->lookup(name);
 }
 
 void Driver::addInstruction(BaseNode* node) const {
@@ -116,6 +125,12 @@ void Driver::report_parse_error(const parser::location_type& loc, error_type err
             break;
         case ER_WRONG_ARGS:
             std::cerr << "wrong number of arguments for the function: " << std::endl;
+            break;
+        case ER_WRONG_RET:
+            std::cerr << "nowhere to return: " << std::endl;
+            break;
+        case ER_TAKEN_NAME:
+            std::cerr << "name already exists: " << std::endl;
             break;
         default:
             throw std::logic_error("Unknown error type!");

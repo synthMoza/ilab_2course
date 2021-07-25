@@ -69,19 +69,19 @@ static void delete_tree(BaseNode* node) {
 // VarNode methods
 
 void VarNode::setValue(int value) {
-    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
+    auto var_info = std::static_pointer_cast<VarInfo>(name_info_);
     var_info->value_ = value;
 }
 
 int VarNode::processNode() {
-    VarInfo* var_info = static_cast<VarInfo*>(name_info_);
+    auto var_info = std::static_pointer_cast<VarInfo>(name_info_);
     return var_info->value_;
 }
 
 // FuncNode methods
 
 int FuncNode::processNode() {
-    FuncInfo* func_info = static_cast<FuncInfo*>(name_info_);
+    std::shared_ptr<FuncInfo> func_info = std::static_pointer_cast<FuncInfo>(name_info_);
     ScopeNode* body = static_cast<ScopeNode*>(func_info->body_);
     
     auto size = func_info->args_.size();
@@ -89,14 +89,23 @@ int FuncNode::processNode() {
         throw std::runtime_error("Unexcepted difference in the number of arguments!");
 
     // Insert each argument's values into the scope
-    VarInfo* var_info = nullptr;
     for (std::size_t i = 0; i < size; ++i) {
         auto value = args_.at(i)->processNode();
-        var_info = static_cast<VarInfo*>(body->lookup(func_info->args_.at(i)));
+        auto var_info = std::static_pointer_cast<VarInfo>(body->lookup(func_info->args_.at(i)));
         var_info->value_ = value;
     }
 
-    return body->processNode();
+    try {
+        return body->processNode();
+    } catch (ret_exception& e) {
+        return e.get();
+    }
+    
+}
+
+FuncNode::~FuncNode() {
+    for (auto* arg : args_)
+        delete_tree(arg);
 }
 
 // Binary Operation Node
@@ -181,7 +190,7 @@ int ScopeNode::processNode() {
     return result;
 }
 
-void ScopeNode::insert(NameInfo* info, const std::string& name) {
+void ScopeNode::insert(std::shared_ptr<NameInfo> info, const std::string& name) {
     // If it already exists, runtime error while PARSING
     if (table_ == nullptr)
         throw std::runtime_error("Unexpected null symbol table!");
@@ -189,9 +198,9 @@ void ScopeNode::insert(NameInfo* info, const std::string& name) {
     table_->insert(info, name);
 }
 
-NameInfo* ScopeNode::lookup(const std::string& name) const {
+std::shared_ptr<NameInfo> ScopeNode::lookup(const std::string& name) const {
     auto look_scope = this;
-    NameInfo* info_p = nullptr;
+    std::shared_ptr<NameInfo> info_p = nullptr;
 
     do {
         info_p = look_scope->table_->lookup(name);
@@ -208,9 +217,10 @@ void ScopeNode::addInstruction(BaseNode* node) {
 }
 
 ScopeNode::~ScopeNode() {
-    delete table_;
     for (auto* node : instructions_)
         delete_tree(node);
+    
+    delete table_;
 }
 
 // IfNode methods

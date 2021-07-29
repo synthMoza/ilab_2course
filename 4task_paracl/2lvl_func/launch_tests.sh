@@ -33,7 +33,7 @@ for file in tests/*.test; do
     
     # Launch the test with this input
     >$output; # clear the output file
-	./$EXEC $file < "$input_file_name" > $output
+	valgrind --leak-check=full ./$EXEC $file < "$input_file_name" > $output
 	# Check the output
 	if cmp -s "$output" "$output_file_name"; then
 		echo -e "[RESULT] \t ${GREEN} SUCCESS ${NC}"

@@ -128,7 +128,15 @@ namespace se {
         void dump() const {
             table_->dump();
         }
-        
+        // Get exact copy of current table, used for restoreTable() method
+        Symtab* getTableCopy() {
+            return new Symtab(*table_);
+        }
+        // Restores current table with values from the given one (deletes given table)
+        void restoreTable(Symtab* table) {
+            table_->restore(table);
+        }
+
         // Wrappers for symbol table methods
         void clear() {
             table_->clear();
@@ -191,8 +199,6 @@ namespace se {
             throw ret_exception(expression_->processNode());
         }
 
-        ~RetNode() {
-            delete expression_;
-        }
+        ~RetNode();
     };
 }

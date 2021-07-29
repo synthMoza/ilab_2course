@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <iostream>
 
 namespace se {
     // Forward declaration
@@ -18,6 +19,8 @@ namespace se {
         NameType type_;
 
         NameInfo(NameType type) : type_ (type) {}
+        virtual NameInfo* clone() const = 0;
+        virtual void assign(NameInfo* rhs) = 0;
         // Virtual method that releases all resources of this name info (like scope for FuncInfo)
         virtual void release() {}
         virtual ~NameInfo() = default;
@@ -29,6 +32,14 @@ namespace se {
 
         VarInfo() : value_{}, NameInfo(NameType::VAR) {}
         VarInfo(int value) : value_ (value), NameInfo(NameType::VAR) {}
+        void assign(NameInfo* rhs) override {
+            auto var_info = static_cast<VarInfo*>(rhs);
+            value_ = var_info->value_;
+        }
+        VarInfo* clone() const override {
+            return new VarInfo(value_);
+        }
+        ~VarInfo() = default;
     };
 
     struct FuncInfo final : public NameInfo {
@@ -38,7 +49,14 @@ namespace se {
         FuncInfo() : NameInfo(NameType::FUNC), body_ (nullptr) {}
         FuncInfo(BaseNode* body, std::vector<std::string> args) :
             NameInfo(NameType::FUNC), body_ (body), args_ (args) {}
-        
+        void assign(NameInfo* rhs) override {
+            auto func_info = static_cast<FuncInfo*>(rhs);
+            body_ = func_info->body_;
+            args_ = func_info->args_;
+        }
+        FuncInfo* clone() const override {
+            return new FuncInfo(body_, args_);
+        }
         // Pleasantly looking setters
         void setBody(BaseNode* body) {
             body_ = body;
@@ -54,8 +72,21 @@ namespace se {
     class Symtab {
         std::unordered_map<std::string, std::shared_ptr<NameInfo>> table_;
     public:
+        Symtab() = default;
+        Symtab(const Symtab& rhs) {
+            for (auto&& pair : rhs.table_) {
+                table_[pair.first] = std::shared_ptr<NameInfo>(pair.second->clone());
+            }
+        }
         void clear() {
             table_.clear();
+        }
+        // Restore the table with the values from the given one
+        void restore(Symtab* rhs) {
+            for (auto&& pair : rhs->table_)
+                table_[pair.first]->assign(pair.second.get());
+            
+            delete rhs;
         }
         // Check all the elements in the table
         void dump() const;

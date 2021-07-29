@@ -5,9 +5,25 @@
 
 using namespace se;
 
+// For symtab dump
+std::ostream& operator<<(std::ostream& os, NameType type) {
+    switch (type) {
+        case NameType::VAR:
+            os << "VAR";
+            break;
+        case NameType::FUNC:
+            os << "FUNC";
+            break;
+        default:
+            break;
+    }
+
+    return os;
+}
+
 // Function info method
 FuncInfo::~FuncInfo() {
-    delete body_;
+    release();
 }
 
 void FuncInfo::release() {
@@ -17,14 +33,19 @@ void FuncInfo::release() {
     }
 }
 
-// SymTab methods
+// Symtab methods
 
 void Symtab::dump() const {
     std::cout << "Dump Symtab, address = " << this << std::endl;
     
     int i = 0;
     for (auto&& el : table_) {
-        std::cout << "[" << i << "]: " << el.first << ", " << el.second << ", own_count=" << el.second.use_count() << std::endl;
+        std::cout << "[" << i << "]: " << el.first << ", " << el.second;
+        std::cout << ", own_count=" << el.second.use_count() << ", type = " << el.second->type_;
+        if (el.second->type_ == NameType::VAR)
+            std::cout << ", value = " << std::static_pointer_cast<VarInfo>(el.second)->value_;
+        
+        std::cout << std::endl;
         ++i;
     }
 }

@@ -215,7 +215,7 @@ UnOpNode::~UnOpNode() {
 
 // Scope node methods
 
-// Process all nodes without stack
+// Process all nodes without stack (function traversal)
 int ScopeNode::processFunc() {
     int result = 0;
 

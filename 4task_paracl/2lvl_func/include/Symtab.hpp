@@ -19,7 +19,6 @@ namespace se {
         NameType type_;
 
         NameInfo(NameType type) : type_ (type) {}
-        virtual NameInfo* clone() const = 0;
         virtual void assign(NameInfo* rhs) = 0;
         // Virtual method that releases all resources of this name info (like scope for FuncInfo)
         virtual void release() {}
@@ -36,12 +35,10 @@ namespace se {
             auto var_info = static_cast<VarInfo*>(rhs);
             value_ = var_info->value_;
         }
-        VarInfo* clone() const override {
-            return new VarInfo(value_);
-        }
         ~VarInfo() = default;
     };
 
+    // Inherits from NameInfo, contains function body and list (vector) of arguments
     struct FuncInfo final : public NameInfo {
         BaseNode* body_;
         std::vector<std::string> args_; 
@@ -54,9 +51,6 @@ namespace se {
             body_ = func_info->body_;
             args_ = func_info->args_;
         }
-        FuncInfo* clone() const override {
-            return new FuncInfo(body_, args_);
-        }
         // Pleasantly looking setters
         void setBody(BaseNode* body) {
             body_ = body;
@@ -65,7 +59,9 @@ namespace se {
             args_ = args;
         }
         void release() override;
-        ~FuncInfo();
+        ~FuncInfo() {
+            release();
+        }
     };
 
     // Symbol table to store information about each name declaration in the scopes
@@ -73,21 +69,11 @@ namespace se {
         std::unordered_map<std::string, std::shared_ptr<NameInfo>> table_;
     public:
         Symtab() = default;
-        Symtab(const Symtab& rhs) {
-            for (auto&& pair : rhs.table_) {
-                table_[pair.first] = std::shared_ptr<NameInfo>(pair.second->clone());
-            }
-        }
         void clear() {
             table_.clear();
         }
         // Restore the table with the values from the given one
-        void restore(Symtab* rhs) {
-            for (auto&& pair : rhs->table_)
-                table_[pair.first]->assign(pair.second.get());
-            
-            delete rhs;
-        }
+        void restore(Symtab* rhs);
         // Check all the elements in the table
         void dump() const;
         void insert(std::shared_ptr<NameInfo> info, const std::string& name);

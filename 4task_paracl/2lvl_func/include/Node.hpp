@@ -64,12 +64,12 @@ namespace se {
     // Function node that contains its body as a pointer to scope node
     class FuncNode final : public DeclNode {
         std::vector<BaseNode*> args_;
-        std::optional<int> ret_;
+        std::optional<int> ret_; // ret_ contains value if was already called
     public:
         FuncNode(const std::string& name, std::shared_ptr<FuncInfo> func_info, std::vector<BaseNode*> args) 
             : DeclNode(name, func_info, node_type::FUNC), args_ (args) {}
 
-        bool wasCalled() {
+        bool wasCalled() const {
             return ret_.has_value();
         }
         int processNode() override;
@@ -136,7 +136,7 @@ namespace se {
             table_->dump();
         }
         // Get exact copy of current table, used for restoreTable() method
-        Symtab* getTableCopy() {
+        Symtab* getTableCopy() const {
             return new Symtab(*table_);
         }
         // Restores current table with values from the given one (deletes given table)

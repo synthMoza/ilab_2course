@@ -1,0 +1,12 @@
+fib = func(x) : fibonacci {
+	if (x <= 1)
+		return 1;
+
+	return fibonacci(x - 1) + fibonacci(x - 2);
+}
+
+input = ?;
+while (input > 0) {
+	print fib(input);
+	input = ?;
+}

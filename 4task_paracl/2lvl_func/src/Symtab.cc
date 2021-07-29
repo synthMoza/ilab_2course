@@ -5,7 +5,7 @@
 
 using namespace se;
 
-// For symtab dump
+// For better symbol table dump
 std::ostream& operator<<(std::ostream& os, NameType type) {
     switch (type) {
         case NameType::VAR:
@@ -22,9 +22,6 @@ std::ostream& operator<<(std::ostream& os, NameType type) {
 }
 
 // Function info method
-FuncInfo::~FuncInfo() {
-    release();
-}
 
 void FuncInfo::release() {
     if (body_ != nullptr) {
@@ -34,6 +31,13 @@ void FuncInfo::release() {
 }
 
 // Symtab methods
+
+void Symtab::restore(Symtab* rhs) {
+    for (auto&& pair : rhs->table_)
+        table_[pair.first]->assign(pair.second.get());
+    
+    delete rhs;
+}
 
 void Symtab::dump() const {
     std::cout << "Dump Symtab, address = " << this << std::endl;

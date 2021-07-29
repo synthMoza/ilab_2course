@@ -100,15 +100,20 @@ int FuncNode::processNode() {
     }
 
     try {
-        // Restore symbol table
-        ret = body->processNode();
+        ret = body->processFunc();
         body->restoreTable(symtab);
+        ret_ = ret; // store the ret value into optional
 
         return ret;
     } catch (ret_exception& e) {
-        // Restore symbol table
         body->restoreTable(symtab);
+        ret_ = ret; // store the ret value into optional
+
         return e.get();
+    } catch (call_exception& e) {
+        // Restore table and pass further
+        body->restoreTable(symtab);
+        throw e;
     }
 }
 
@@ -123,10 +128,29 @@ FuncNode::~FuncNode() {
     case bin_op_type::name:                                         \
         return (left_->processNode() op right_->processNode());     \
 
+// Static method for checking whether this node may be called or not
+static void wasCalled(BaseNode* node) {
+    auto type = node->getType();
+    switch (type) {
+        case node_type::FUNC: {
+            auto func_node = static_cast<FuncNode*>(node);
+            if (!func_node->wasCalled())
+                throw call_exception(node);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+
 int BinOpNode::processNode() {
     if (left_ == nullptr || right_ == nullptr)
         throw std::runtime_error("Unexpected null children!");
     
+    wasCalled(left_);
+    wasCalled(right_);
+
     int value = 0;
     VarNode* lvalue = nullptr;
     
@@ -161,6 +185,9 @@ int BinOpNode::processNode() {
 // Unary operation node
 
 int UnOpNode::processNode() {
+    if (child_ != nullptr)
+        wasCalled(child_);
+
     int value = 0;
     switch (type_) {
         case un_op_type::U_PLUS:
@@ -188,12 +215,47 @@ UnOpNode::~UnOpNode() {
 
 // Scope node methods
 
-int ScopeNode::processNode() {
+// Process all nodes without stack
+int ScopeNode::processFunc() {
     int result = 0;
 
     for (auto* node : instructions_) {
         // Commit each node
         result = node->processNode();
+    }
+
+    return result;
+}
+
+int ScopeNode::processNode() {
+    // If there are no instructions, skip process
+    if (instructions_.size() == 0)
+        return 0;
+
+    int result = 0;
+    BaseNode* node = nullptr;
+
+    auto cur_inst = instructions_.begin();
+    call_stack_.push(*cur_inst);
+    
+    while (!call_stack_.empty()) {
+        node = call_stack_.top(); // do not pop from stack yet
+        try {
+            result = node->processNode();
+        } catch (call_exception& e) {
+            // Failed to process this node
+            call_stack_.push(e.get());
+            continue;
+        }
+
+        // Successfull call
+        call_stack_.pop(); // may pop now
+
+        if (call_stack_.size() == 0) {
+            cur_inst = std::next(cur_inst);
+            if (cur_inst != instructions_.end()) // last instruction
+                call_stack_.push(*cur_inst);
+        }
     }
 
     return result;

@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <vector>
+#include <stack>
+#include <optional>
 
 #include "Symtab.hpp"
 
@@ -10,7 +12,7 @@ namespace se {
 
     // Node type for proper resource deleting
     enum class node_type {
-        NUM, DECL, VAR, BIN_OP, UN_OP, SCOPE, IF, WHILE, RET
+        NUM, DECL, VAR, FUNC, BIN_OP, UN_OP, SCOPE, FUNC_BODY, IF, WHILE, RET
     };
     
     class BaseNode {
@@ -62,10 +64,14 @@ namespace se {
     // Function node that contains its body as a pointer to scope node
     class FuncNode final : public DeclNode {
         std::vector<BaseNode*> args_;
+        std::optional<int> ret_;
     public:
         FuncNode(const std::string& name, std::shared_ptr<FuncInfo> func_info, std::vector<BaseNode*> args) 
-            : DeclNode(name, func_info), args_ (args) {}
+            : DeclNode(name, func_info, node_type::FUNC), args_ (args) {}
 
+        bool wasCalled() {
+            return ret_.has_value();
+        }
         int processNode() override;
 
         ~FuncNode();
@@ -118,6 +124,7 @@ namespace se {
         std::vector<BaseNode*> instructions_;
         ScopeNode* prev_;
         Symtab* table_;
+        std::stack<BaseNode*> call_stack_;
     public:
         ScopeNode(ScopeNode* prev) : 
             BaseNode(node_type::SCOPE), prev_ (prev), table_ (new Symtab) {}
@@ -150,6 +157,7 @@ namespace se {
             return prev_;
         }
 
+        int processFunc();
         int processNode() override;
 
         ~ScopeNode();
@@ -187,6 +195,16 @@ namespace se {
         ret_exception(int code) : code_ (code) {}
         const int& get() const {
             return code_;
+        }
+    };
+
+    // Exception for cases in which function can not be processed due to inner function call
+    class call_exception {
+        BaseNode* node_; // node which caused exception (uncalculated function)
+    public:
+        call_exception(BaseNode* node) : node_ (node) {}
+        BaseNode* get() const {
+            return node_;
         }
     };
 

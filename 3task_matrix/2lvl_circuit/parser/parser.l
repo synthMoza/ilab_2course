@@ -11,7 +11,7 @@ DIGIT1  [1-9]
 SIGN    [+-]?
 UINT    {DIGIT1}{DIGIT}*|{DIGIT}
 INT     {SIGN}{UINT}
-DOUBLE  {INT}.{UINT}+
+DOUBLE  {SIGN}{DIGIT}+.{DIGIT}+
 
 %%
 

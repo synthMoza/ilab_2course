@@ -233,8 +233,15 @@ namespace se {
 		// Raise to the nth power (not negative)
         Matrix& operator^=(unsigned int n) & {
 			Matrix<T> mul{*this};
-			for (int i = 1; i < n; ++i)
-				(*this) *= mul;
+
+			n--;
+			while (n > 0) {
+				if (n % 2 != 0)
+					*this *= mul;
+				
+				n /= 2;
+				mul *= mul;
+			}
 
 			return *this;
 		}
@@ -296,15 +303,18 @@ namespace se {
 
 		// Replace the "pos" row in the matrix with the given one
 		Matrix& replaceRow(const Matrix<T>& row, size_type pos) & {
-			if (row.getColumns() != columns_ || row.getRows() != 1 || pos >= getRows())
-				throw std::logic_error("Wrong row/position given");
+			if (row.getColumns() != columns_ || row.getRows() != 1 || pos >= rows_)
+				throw std::out_of_range("Wrong row/position given");
 			
-			std::memcpy(matrix_[pos], row.matrix_[pos], columns_ * sizeof(T))	;
+			std::memcpy(matrix_[pos], row.data_, columns_ * sizeof(T));
 			return *this;
 		}
 
 		// Replace the "pos" row in the matrix with the row from the given matrix
 		Matrix& replaceRowFrom(const Matrix& rhs, size_type pos) & {
+			if (pos >= rows_ || pos >= rhs.rows_)
+				throw std::out_of_range("Wrong row/position given");
+
 			std::memcpy(matrix_[pos], rhs.matrix_[pos], columns_ * sizeof(T))	;
 			return *this;
 		}
@@ -312,7 +322,7 @@ namespace se {
 		// Replace the "pos" column in the matrix with the given one
 		Matrix& replaceColumn(const Matrix<T>& column, size_type pos) & {
 			if (column.getRows() != rows_ || column.getColumns() != 1 || pos >= getColumns())
-				throw std::logic_error("Wrong column/position given");
+				throw std::out_of_range("Wrong column/position given");
 			
 			for (int i = 0; i < rows_; ++i)
 				matrix_[i][pos] = column.data_[i];
@@ -322,6 +332,9 @@ namespace se {
 
 		// Replace the "pos" column in the matrix with the column from the given matrix
 		Matrix& replaceColumnFrom(const Matrix& rhs, size_type pos) & {
+			if (pos >= columns_ || pos >= rhs.columns_)
+				throw std::out_of_range("Wrong row/position given");
+
 			for (int i = 0; i < rows_; ++i)
 				matrix_[i][pos] = rhs.matrix_[i][pos];
 
@@ -349,9 +362,12 @@ namespace se {
 			return *this;
 		}
 
-		// Find the maximum value in the given column
+		// Find the maximum value in the given column starting from j row
 		// @return Row of this element
     	int columnMax(int j) const {
+			if (j >= columns_)
+				throw std::out_of_range("Column index is out of range");
+
 			int max = j;
 
 			for (int i = j; i < rows_; ++i)
@@ -405,7 +421,7 @@ namespace se {
 
 			for (int i = 0; i < rows_; ++i)
 				for (int j = 0; j < columns_; ++j) {
-					matrix_[i][j] = getMinor(i, j);
+					res[i][j] = getMinor(i, j);
 
 					if ((i + j) % 2 != 0) {
 						res[i][j] *= -1;
@@ -429,6 +445,16 @@ namespace se {
 
 		// Inverse the matrix
 		Matrix& inverse() & {
+			if (rows_ == 1 && columns_ == 1) {
+				// Special case - 1x1 matrix
+				if (data_[0] != 0)				
+					data_[0] = 1 / data_[0];
+				else
+					throw std::logic_error("Divide by zero error");
+				
+				return *this;
+			}
+
 			float det = determinant();
 			if (std::abs(det) < eps)
 				throw std::logic_error("Can't inverse this matrix");
@@ -522,31 +548,5 @@ namespace se {
 				is >> rhs[i][j];
 
 		return is;
-	}
-
-	/* Solve linear equations*/
-	// A * x = B
-	// To solve it, cramer methods is used
-	// Throws exception if the main determinant is zero or if the A and B sizes are not compatible
-	template <typename T, typename U>
-	Matrix<long double> solve_linear(const Matrix<T>& A, const Matrix<U>& B) {
-		auto rows = A.getRows();
-		if (rows != B.getRows())
-			throw std::logic_error("Matrices are not compatible (different sizes)");
-
-		auto main_det = A.determinant();
-		if (std::abs(main_det) < A.eps)
-			throw std::runtime_error("det(A) equals zero, no roots");
-		
-		Matrix<long double> ans(A.getRows(), 1);
-
-		auto end = A.getColumns();
-		for (decltype(end) i = 0; i < end; ++i) {
-			Matrix<long double> tmp(A);
-			tmp.replaceColumn(B, i);
-			ans[i][0] = tmp.determinant() / main_det;
-		}
-
-		return ans;
 	}
 }

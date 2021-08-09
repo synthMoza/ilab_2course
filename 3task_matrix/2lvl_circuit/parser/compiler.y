@@ -78,6 +78,6 @@ namespace yy {
     }
 
     void parser::error(const std::string& message) {
-        std::cerr << "Failure: " << message << std::endl;
+        std::cerr << "Failed to parse the input code - " << message << "!" << std::endl;
     }
 }
